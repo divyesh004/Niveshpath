@@ -25,7 +25,10 @@ const { errorHandler } = require('./middlewares/error.middleware');
 const app = express();
 
 // Apply middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.CLIENT_URL,
+  credentials: true,
+}));
 app.use(compression()); // Add compression for all responses
 app.use(express.json({ limit: '1mb' })); // Limit JSON body size
 app.use(express.urlencoded({ extended: true, limit: '1mb' })); // Parse URL-encoded bodies
