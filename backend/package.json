@@ -1,0 +1,39 @@
+{
+  "name": "niveshpath-backend",
+  "version": "1.0.0",
+  "description": "Backend for NiveshPath - AI-Driven Personal Finance Education Platform",
+  "main": "server.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "finance",
+    "education",
+    "personal finance",
+    "MERN",
+    "AI",
+    "chatbot"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.6.2",
+    "bcryptjs": "^2.4.3",
+    "compression": "^1.8.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-validator": "^7.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.0.3",
+    "morgan": "^1.10.0",
+    "nodemailer": "^7.0.3",
+    "winston": "^3.11.0",
+    "yahoo-finance2": "^2.9.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

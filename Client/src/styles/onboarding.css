@@ -1,0 +1,350 @@
+/* Onboarding Styles - Duolingo Inspired */
+
+/* Container animations */
+.onboarding-container {
+  position: relative;
+  transition: all 0.3s ease-in-out;
+}
+
+.animate-slide {
+  animation: slide-in 0.5s ease-out;
+}
+
+@keyframes slide-in {
+  0% {
+    opacity: 0.7;
+    transform: translateX(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Form animations */
+.form-fade {
+  animation: fade-in 0.4s ease-out;
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0.5;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Character styles */
+.character-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.25rem; /* Reduced margin */
+  height: 80px; /* Adjusted height */
+  position: relative;
+}
+
+.character {
+  width: 60px; /* Slightly smaller */
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1); /* Softer shadow */
+}
+
+/* Owl character (default) */
+.character.owl {
+  background-color: #58cc02; /* Duolingo green */
+  position: relative;
+}
+
+.character.owl:before {
+  content: '🦉';
+  font-size: 30px; /* Adjusted size */
+}
+
+/* Fox character */
+.character.fox {
+  background-color: #ff9600; /* Orange */
+  position: relative;
+}
+
+.character.fox:before {
+  content: '🦊';
+  font-size: 30px; /* Adjusted size */
+}
+
+/* Character animations */
+.character-bounce {
+  animation: bounce 0.6s ease-in-out; /* Smoother bounce */
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px); /* Reduced bounce height */
+  }
+}
+
+/* Speech bubble */
+.character-speech-bubble {
+  position: absolute;
+  top: -55px; /* Adjusted position */
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: white;
+  border: 1px solid #d1d5db; /* Tailwind gray-300, thinner border */
+  border-radius: 10px; /* Slightly less rounded */
+  padding: 7px 10px; /* Adjusted padding */
+  min-width: 200px; /* Adjusted min-width */
+  max-width: 260px; /* Added max-width for better control */
+  text-align: center;
+  font-size: 0.825rem; /* Slightly smaller font */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.07);
+  z-index: 10;
+  white-space: pre-wrap; /* Ensure line breaks work */
+}
+
+/* Speech bubble arrow */
+.character-speech-bubble:after {
+  content: '';
+  position: absolute;
+  bottom: -8px; /* Adjusted for thinner border */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid white;
+}
+
+/* Typing effect */
+.typing-effect {
+  display: inline-block;
+  overflow: hidden;
+  border-right: 2px solid #58cc02;
+  white-space: nowrap;
+  animation: typing 3s steps(40, end), blink-caret 0.75s step-end infinite;
+  width: 100%;
+}
+
+@keyframes typing {
+  from { width: 0 }
+  to { width: 100% }
+}
+
+@keyframes blink-caret {
+  from, to { border-color: transparent }
+  50% { border-color: #58cc02 }
+}
+
+/* Confetti animation */
+.confetti-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 100;
+  overflow: hidden;
+}
+
+.confetti {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  top: -10px;
+  animation: confetti-fall 3s linear forwards;
+  transform: rotate(0deg);
+}
+
+@keyframes confetti-fall {
+  0% {
+    top: -10px;
+    transform: rotate(0deg);
+  }
+  100% {
+    top: 100%;
+    transform: rotate(360deg);
+  }
+}
+
+/* Custom colors for the onboarding flow */
+.bg-background-pro {
+  background-color: #f8fafc;
+}
+
+.text-primary-pro {
+  color: #1e40af;
+}
+
+.text-text-pro {
+  color: #475569;
+}
+
+.bg-secondary-pro {
+  background-color: #58cc02;
+}
+
+.bg-accent-pro {
+  background-color: #46a302;
+}
+
+.text-secondary-pro {
+  color: #58cc02;
+}
+
+.text-accent-pro {
+  color: #ff9600;
+}
+
+.border-accent-pro {
+  border-color: #58cc02;
+}
+
+.focus\:ring-secondary-pro:focus {
+  --tw-ring-color: #58cc02;
+  --tw-ring-opacity: 0.5;
+}
+
+/* Dark mode overrides */
+.dark .bg-background-pro {
+  background-color: #1e293b;
+}
+
+.dark .text-text-pro {
+  color: #cbd5e1;
+}
+
+/* Form animations */
+.form-step-container {
+  transition: all 0.3s ease;
+}
+
+.form-fade {
+  animation: fade 0.3s ease-in-out;
+}
+
+@keyframes fade {
+  0% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Progress bar animations */
+.progress-bar {
+  transition: width 0.5s ease-out;
+}
+
+/* Input field animations */
+.input-field:focus {
+  transform: scale(1.02);
+  transition: all 0.2s ease;
+}
+
+/* Button animations */
+button:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+/* Form navigation buttons */
+.flex.justify-between.mt-8 {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+/* Reduce vertical spacing */
+.onboarding-container > div {
+  padding: 0.5rem;
+}
+
+/* Checkbox animations */
+input[type="checkbox"]:checked + label {
+  color: #58cc02;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+/* Dark mode adjustments */
+/* Using .dark class from Tailwind for explicit dark mode */
+.dark .character-speech-bubble {
+  background-color: #374151; /* Tailwind gray-700 */
+  border-color: #4b5563; /* Tailwind gray-600 */
+  color: #f3f4f6; /* Tailwind gray-100 */
+}
+
+.dark .character-speech-bubble:after {
+  border-top-color: #374151; /* Match dark background */
+}
+
+/* Custom checkbox/radio styling - Add base styles if not fully covered by Tailwind in JSX */
+.custom-checkbox input[type="checkbox"]:focus + .icon,
+.custom-radio input[type="radio"]:focus + .icon {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  --tw-ring-color: var(--secondary-pro);
+  box-shadow: 0 0 0 2px var(--tw-ring-color);
+}
+
+.dark .custom-checkbox input[type="checkbox"]:focus + .icon,
+.dark .custom-radio input[type="radio"]:focus + .icon {
+  --tw-ring-color: var(--secondary-pro-dark);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .character-container {
+    height: 70px; /* Further reduced */
+    margin-bottom: 0.1rem;
+  }
+  
+  .character {
+    width: 45px;
+    height: 45px;
+  }
+  
+  .character.owl:before,
+  .character.fox:before {
+    font-size: 22px; /* Smaller emoji */
+  }
+  
+  .character-speech-bubble {
+    min-width: 140px;
+    max-width: 200px; /* Max width for small screens */
+    font-size: 0.7rem; /* Smaller font for small screens */
+    padding: 6px 8px;
+    top: -50px; /* Adjusted position */
+  }
+
+  .flex.justify-between.mt-8 {
+    flex-direction: column; /* Stack buttons on small screens */
+    align-items: stretch; /* Make buttons full width */
+  }
+
+  .flex.justify-between.mt-8 > button,
+  .flex.justify-between.mt-8 > div + button { /* Target next button specifically */
+    width: 100%;
+    margin-left: 0 !important; /* Override ml-auto */
+  }
+
+  .flex.justify-between.mt-8 > button:first-child:not(:only-child) { /* If there's a back button */
+    margin-bottom: 0.5rem; /* Add space between stacked buttons */
+  }
+}

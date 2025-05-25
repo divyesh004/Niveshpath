@@ -1,0 +1,107 @@
+/* Form Specific Styles */
+
+/* Form Container */
+.form-container {
+  @apply max-w-md mx-auto bg-white dark:bg-[#121212] rounded-xl shadow-lg p-8 border border-gray-100 dark:border-gray-800 transition-all duration-300 hover:shadow-xl;
+}
+
+.glass-form-container {
+  @apply max-w-md mx-auto bg-white bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-xl p-8 border border-white border-opacity-20 transition-all duration-300;
+}
+
+/* Form Section */
+.form-section {
+  @apply mb-6;
+}
+
+/* Form Group - Label + Input combination */
+.form-group {
+  @apply mb-5;
+}
+
+/* Input with icon */
+.input-with-icon {
+  @apply relative;
+}
+
+.input-with-icon .input-field {
+  @apply pl-10;
+}
+
+.input-with-icon .icon {
+  @apply absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400;
+}
+
+/* Input Validation */
+.input-field.error {
+  @apply border-red-500 dark:border-red-400 focus:border-red-500 dark:focus:border-red-400 focus:ring-red-500 dark:focus:ring-red-400;
+}
+
+.error-message {
+  @apply text-red-500 dark:text-red-400 text-xs mt-1;
+}
+
+/* Success state */
+.input-field.success {
+  @apply border-secondary dark:border-accent focus:border-secondary dark:focus:border-accent focus:ring-secondary dark:focus:ring-accent;
+}
+
+/* Form Buttons */
+.form-buttons {
+  @apply flex justify-end space-x-3 mt-8;
+}
+
+.form-button-primary {
+  @apply bg-secondary text-white py-3 px-5 rounded-lg font-semibold transition duration-300 hover:bg-[#009960] focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-opacity-50 shadow-sm;
+}
+
+.form-button-secondary {
+  @apply bg-transparent border-2 border-secondary text-secondary py-3 px-5 rounded-lg font-semibold transition duration-300 hover:bg-secondary hover:text-white focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-opacity-50 shadow-sm;
+}
+
+/* Floating Labels */
+.floating-label-group {
+  @apply relative;
+}
+
+.floating-label-group .input-field {
+  @apply pt-6 pb-2;
+}
+
+.floating-label-group label {
+  @apply absolute left-4 top-3 text-xs text-gray-500 dark:text-gray-400 transition-all duration-200;
+}
+
+/* Custom Select Styling */
+.custom-select {
+  @apply relative;
+}
+
+.custom-select select {
+  @apply appearance-none;
+}
+
+.custom-select:after {
+  @apply absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none;
+  content: '';
+  width: 0.8em;
+  height: 0.5em;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23666666'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+/* Responsive Form */
+@media (max-width: 640px) {
+  .form-container {
+    @apply p-5;
+  }
+  
+  .form-buttons {
+    @apply flex-col space-x-0 space-y-3;
+  }
+  
+  .form-buttons button {
+    @apply w-full;
+  }
+}
