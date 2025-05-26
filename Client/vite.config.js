@@ -2,7 +2,6 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -18,5 +17,17 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-  }
+  },
+  build: {
+    chunkSizeWarningLimit: 1000, // ✅ suppress large chunk warnings
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // ✅ improves performance by splitting vendor code
+          react: ['react', 'react-dom'],
+          vendor: ['axios', 'lodash'], // Add more libs if needed
+        },
+      },
+    },
+  },
 })
