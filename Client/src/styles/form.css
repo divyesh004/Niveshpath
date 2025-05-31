@@ -1,5 +1,4 @@
-/* Form Specific Styles */
-@import './styles/form.css';
+
 /* Form Container */
 .form-container {
   @apply max-w-md mx-auto bg-white dark:bg-[#121212] rounded-xl shadow-lg p-8 border border-gray-100 dark:border-gray-800 transition-all duration-300 hover:shadow-xl;
