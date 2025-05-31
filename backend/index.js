@@ -26,7 +26,8 @@ const app = express();
 
 // Apply middleware
 app.use(cors({
-  origin: '*',
+  origin: 'https://niveshpath.deepnex.in', // 👈 Allow frontend domain
+  credentials: true // 👈 Agar cookies ya auth token use ho raha hai
 }));
 app.use(compression()); // Add compression for all responses
 app.use(express.json({ limit: '1mb' })); // Limit JSON body size
