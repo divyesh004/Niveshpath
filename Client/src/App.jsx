@@ -31,9 +31,29 @@ function App() {
   useEffect(() => {
     // Don't auto-scroll on chatbot page
     if (!location.pathname.includes('/chatbot')) {
-      window.scrollTo(0, 0)
+      // Use smooth scrolling for better user experience
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'smooth'
+      })
     }
   }, [location])
+
+  // Add scroll restoration behavior
+  useEffect(() => {
+    // This helps with browser back/forward navigation
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+    
+    // Clean up scroll position when component unmounts
+    return () => {
+      if ('scrollRestoration' in history) {
+        history.scrollRestoration = 'auto';
+      }
+    };
+  }, []);
 
   useEffect(() => {
     // Check if user has a theme preference stored
@@ -64,17 +84,17 @@ function App() {
         <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Landing darkMode={darkMode} setDarkMode={setDarkMode} />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login darkMode={darkMode} setDarkMode={setDarkMode} />} />
+        <Route path="/register" element={<Register darkMode={darkMode} setDarkMode={setDarkMode} />} />
         <Route path="/verify-email" element={<EmailVerification />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/onboarding" element={
-          <ProtectedRoute>
+          <ProtectedRoute requireOnboarding={false}>
             <Onboarding />
           </ProtectedRoute>
         } />
         <Route path="/onboarding-chatbot" element={
-          <ProtectedRoute>
+          <ProtectedRoute requireOnboarding={false}>
             <OnboardingChatbot />
           </ProtectedRoute>
         } />

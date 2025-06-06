@@ -22,8 +22,8 @@ export const AuthProvider = ({ children }) => {
     try {
       const data = await authAPI.register(userData);
       
-      // Set token in localStorage
-      localStorage.setItem('token', data.token);
+      // Token is now set as an HTTP-only cookie by the backend
+      // localStorage.setItem('token', data.token);
       
       // Set user data
       setCurrentUser(data.user);
@@ -43,10 +43,27 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       const data = await authAPI.login(credentials);
-      localStorage.setItem('token', data.token);
+      // Token is now set as an HTTP-only cookie by the backend
+      // localStorage.setItem('token', data.token);
       setCurrentUser(data.user);
+      
+      // Check onboarding status after login
+      try {
+        const onboardingResponse = await apiService.onboarding.getOnboardingStatus();
+        console.log('Onboarding status response:', onboardingResponse);
+        if (onboardingResponse && onboardingResponse.data && onboardingResponse.data.isOnboardingCompleted) {
+          setOnboardingCompleted(true);
+        } else {
+          setOnboardingCompleted(false);
+        }
+      } catch (onboardingError) {
+        console.error('Error checking onboarding status after login:', onboardingError);
+        setOnboardingCompleted(false);
+      }
+      
       return data;
     } catch (error) {
+      console.error('Login error:', error);
       // Check if the error response contains email verification information
       if (error.response && error.response.status === 403 && 
           error.response.data && error.response.data.isEmailVerified === false) {
@@ -61,60 +78,88 @@ export const AuthProvider = ({ children }) => {
   };
   
   // Logout user
-  const logout = () => {
-    localStorage.removeItem('token');
+  const logout = async () => {
+    try {
+      // Call a backend endpoint to clear the cookie if it exists
+      // This is a good practice for a complete logout
+      await apiService.auth.logout(); // Assuming you'll create this endpoint
+    } catch (error) {
+      console.error('Error during logout API call:', error);
+      // Still proceed with frontend logout even if API call fails
+    }
+    // localStorage.removeItem('token'); // Token is an HttpOnly cookie, cannot be removed by client-side JS
     setCurrentUser(null);
+    // Optionally, clear other local storage items if needed
+    localStorage.removeItem('onboardingCompleted');
+    // Redirect or show a message after logout
+    toast.info('You have been logged out.');
   };
   
-  // Check if user is authenticated
+  // Check if user is authenticated (relies on HttpOnly cookie)
   useEffect(() => {
-    const verifyToken = async () => {
-      const token = localStorage.getItem('token');
+    const verifyCurrentUser = async () => {
+      // No need to get token from localStorage, browser sends cookie automatically
+      // const token = localStorage.getItem('token'); 
       
-      if (!token) {
-        setLoading(false);
-        return;
-      }
+      // if (!token) { // This check is no longer relevant for HttpOnly cookies
+      //   setLoading(false);
+      //   return;
+      // }
       
       try {
-        const userData = await authAPI.getCurrentUser();
+        // getCurrentUser will work if the cookie is valid and sent by the browser
+        const userData = await authAPI.getCurrentUser(); 
         setCurrentUser(userData.user);
         
-        // Check if user has onboarding data in their profile
-        if (userData.user && userData.user.onboardingCompleted) {
-          setOnboardingCompleted(true);
-          localStorage.setItem('onboardingCompleted', 'true');
-        } else {
-          // Use local storage as fallback if not in user profile
-          const onboardingStatus = localStorage.getItem('onboardingCompleted');
-          setOnboardingCompleted(onboardingStatus === 'true');
+        // Always check the dedicated onboarding status endpoint
+        try {
+          const onboardingResponse = await apiService.onboarding.getOnboardingStatus();
+          
+          if (onboardingResponse && onboardingResponse.data && onboardingResponse.data.isOnboardingCompleted) {
+            setOnboardingCompleted(true);
+          } else {
+            setOnboardingCompleted(false);
+          }
+        } catch (onboardingError) {
+          console.error('Error checking onboarding status:', onboardingError);
+          setOnboardingCompleted(false);
         }
       } catch (error) {
-        console.error('Authentication error:', error);
-        localStorage.removeItem('token');
-        toast.error('Your session has expired. Please login again.');
+        // If getCurrentUser fails (e.g., 401 Unauthorized), it means no valid cookie/session
+        console.error('Authentication error (session may have expired or no cookie):', error);
+        // localStorage.removeItem('token'); // Cannot remove HttpOnly cookie from client-side
+        setCurrentUser(null); // Ensure user is logged out frontend-wise
+        // Optionally, notify the user if it's not an initial load without a session
+        // toast.error('Your session has expired. Please login again.');
       } finally {
         setLoading(false);
       }
     };
     
-    verifyToken();
+    verifyCurrentUser();
   }, []);
   
   // Update onboarding status
   const updateOnboardingStatus = async (status) => {
     setOnboardingCompleted(status);
-    // Save onboarding status to localStorage
-    localStorage.setItem('onboardingCompleted', status.toString());
     
     // Try to update the status on the backend if user is logged in
     if (currentUser && status) {
       try {
         // Update user profile with onboarding status
         await apiService.user.updateProfile({ onboardingCompleted: status });
+        
+        // Verify the status was updated by checking with the backend
+        const onboardingResponse = await apiService.onboarding.getOnboardingStatus();
+        console.log('Onboarding status response in updateOnboardingStatus:', onboardingResponse);
+        if (onboardingResponse && onboardingResponse.data && 
+            onboardingResponse.data.isOnboardingCompleted !== status) {
+          console.warn('Onboarding status mismatch between local and server');
+          // Update local state to match server
+          setOnboardingCompleted(onboardingResponse.data.isOnboardingCompleted);
+        }
       } catch (error) {
         console.error('Failed to update onboarding status on server:', error);
-        // Continue using localStorage even if server update fails
       }
     }
   };

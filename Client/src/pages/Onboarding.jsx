@@ -21,22 +21,15 @@ const Onboarding = (props) => {
   useEffect(() => {
     const checkOnboardingStatus = async () => {
       try {
-        // Check localStorage first
-        const onboardingStatus = localStorage.getItem('onboardingCompleted');
-        if (onboardingStatus === 'true') {
-          // User has already completed onboarding, redirect to dashboard
-          toast.info('You have already completed onboarding', { toastId: 'onboarding-already-completed-local' });
-          navigate('/dashboard');
-          return;
-        }
-        
-        // Try to get status from API as backup
+        // Don't check localStorage first, always rely on API
+        // Try to get status from API
         try {
           const response = await apiService.onboarding.getOnboardingStatus();
-          if (response.data && response.data.completed) {
+          if (response && response.isOnboardingCompleted) {
             // User has already completed onboarding, redirect to dashboard
             toast.info('You have already completed onboarding', { toastId: 'onboarding-already-completed-api' });
             navigate('/dashboard');
+            return;
           }
         } catch (apiError) {
           console.error('API error checking onboarding status:', apiError);
@@ -67,24 +60,24 @@ const Onboarding = (props) => {
     // Financial Goals
     shortTermGoals: [],
     longTermGoals: [],
-    riskTolerance: 'medium', // very_low, low, medium, high, very_high
-    investmentTimeframe: 'medium_term', // short_term, medium_term, long_term
+    riskTolerance: '', // very_low, low, medium, high, very_high
+    investmentTimeframe: '', // short_term, medium_term, long_term
     
     // Existing Investments
     hasExistingInvestments: false,
     investmentTypes: [],
     
     // Financial Knowledge
-    knowledgeLevel: 'beginner', // beginner, intermediate, advanced
+    knowledgeLevel: '', // beginner, intermediate, advanced
     
     // Psychological Profile
-    financialAnxiety: 'medium', // low, medium, high
-    decisionMakingStyle: 'analytical', // analytical, intuitive, consultative, spontaneous
+    financialAnxiety: '', // low, medium, high
+    decisionMakingStyle: '', // analytical, intuitive, consultative, spontaneous
     
     // Cultural Background
     culturalBackground: '',
     financialBeliefs: [],
-    communityInfluence: 'medium', // low, medium, high
+    communityInfluence: '', // low, medium, high
   });
   
   const handleChange = (e) => {
@@ -202,6 +195,86 @@ const Onboarding = (props) => {
   };
   
   const nextStep = () => {
+    // Validate required fields based on current step
+    if (currentStep === 1) {
+      // Personal Information validation
+      if (!formData.name || !formData.age || !formData.monthlyIncome) {
+        // Play error sound
+        playNotificationSound('error');
+        toast.error('Please fill all required fields', { toastId: 'required-fields-error' });
+        return;
+      }
+    } else if (currentStep === 2) {
+      // Financial Goals validation
+      if (!formData.shortTermGoals || formData.shortTermGoals.length === 0) {
+        playNotificationSound('error');
+        toast.error('Please select at least one short-term goal', { toastId: 'missing-short-term-goals' });
+        return;
+      }
+      
+      if (!formData.longTermGoals || formData.longTermGoals.length === 0) {
+        playNotificationSound('error');
+        toast.error('Please select at least one long-term goal', { toastId: 'missing-long-term-goals' });
+        return;
+      }
+      
+      if (!formData.riskTolerance) {
+        playNotificationSound('error');
+        toast.error('Please select your risk tolerance', { toastId: 'missing-risk-tolerance' });
+        return;
+      }
+      
+      if (!formData.investmentTimeframe) {
+        playNotificationSound('error');
+        toast.error('Please select your investment timeframe', { toastId: 'missing-investment-timeframe' });
+        return;
+      }
+    } else if (currentStep === 3) {
+      // Investment Experience and Financial Knowledge validation
+      if (formData.hasExistingInvestments && (!formData.investmentTypes || formData.investmentTypes.length === 0)) {
+        playNotificationSound('error');
+        toast.error('Please select at least one investment type', { toastId: 'missing-investment-types' });
+        return;
+      }
+      
+      if (!formData.knowledgeLevel) {
+        playNotificationSound('error');
+        toast.error('Please select your knowledge level', { toastId: 'missing-knowledge-level' });
+        return;
+      }
+    } else if (currentStep === 4) {
+      // Psychological & Cultural Profile validation
+      if (!formData.financialAnxiety) {
+        playNotificationSound('error');
+        toast.error('Please select your financial anxiety level', { toastId: 'missing-financial-anxiety' });
+        return;
+      }
+      
+      if (!formData.decisionMakingStyle) {
+        playNotificationSound('error');
+        toast.error('Please select your decision making style', { toastId: 'missing-decision-style' });
+        return;
+      }
+      
+      if (!formData.communityInfluence) {
+        playNotificationSound('error');
+        toast.error('Please select your community influence level', { toastId: 'missing-community-influence' });
+        return;
+      }
+      
+      if (!formData.culturalBackground) {
+        playNotificationSound('error');
+        toast.error('Please enter your cultural background', { toastId: 'missing-cultural-background' });
+        return;
+      }
+      
+      if (!formData.financialBeliefs || formData.financialBeliefs.length === 0) {
+        playNotificationSound('error');
+        toast.error('Please select at least one financial belief', { toastId: 'missing-financial-beliefs' });
+        return;
+      }
+    }
+    
     // Play sound effect with improved function
     playNotificationSound('next');
     
@@ -250,15 +323,15 @@ const Onboarding = (props) => {
         setCharacter('fox');
         break;
       case 3:
-        message = 'Do you have any investment experience? No worries if you don\'t!';
+        message = 'Do you have any investment experience? Don\'t worry if you don\'t!';
         setCharacter('owl');
         break;
       case 4:
-        message = 'Last step! Let\'s understand your financial personality better.';
+        message = 'Final step! Let\'s better understand your financial personality.';
         setCharacter('fox');
         break;
       case 5:
-        message = 'Amazing job! You\'re all set to start your financial journey!';
+        message = 'Amazing work! You\'re ready to start your financial journey!';
         setCharacter('owl');
         setConfetti(true);
         break;
@@ -421,8 +494,8 @@ const Onboarding = (props) => {
       // Update onboarding status in AuthContext
       updateOnboardingStatus(true);
       
-      // Also store in session storage to prevent repeated prompts
-      sessionStorage.setItem('onboardingChecked', 'true');
+      // Don't use sessionStorage for cross-device compatibility
+      // sessionStorage.setItem('onboardingChecked', 'true');
       
       // Navigate after a short delay to show the success screen
       setTimeout(() => {
@@ -456,15 +529,17 @@ const Onboarding = (props) => {
     switch(currentStep) {
       case 0: // Welcome Screen
         return (
-          <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 min-h-[350px] flex flex-col justify-center items-center text-center p-8 rounded-2xl shadow-lg border border-indigo-100 dark:border-indigo-900">
-            <img src="/images/finance-journey.svg" alt="Finance Journey" className="w-32 h-32 mb-6 drop-shadow-lg animate-float" />
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Welcome to Your Finance Journey 🚀</h1>
+          <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 dark:from-primary-pro/30 dark:to-secondary-pro/20 min-h-[350px] flex flex-col justify-center items-center text-center p-8 rounded-2xl shadow-lg border border-indigo-100 dark:border-secondary-pro/30">
+            <div className="w-32 h-32 mb-6 flex items-center justify-center bg-indigo-100 dark:bg-secondary-pro/20 rounded-full">
+              <span className="text-6xl">🚀</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-secondary dark:from-accent-pro dark:to-secondary-pro bg-clip-text text-transparent">Welcome to Your Financial Journey 🚀</h1>
             <p className="text-gray-600 dark:text-gray-300 mt-4 text-lg max-w-2xl">We'll guide you step-by-step to better understand your finances and create a personalized investment strategy.</p>
             <button 
               onClick={nextStep}
-              className="mt-8 bg-gradient-to-r from-secondary to-primary hover:from-secondary-dark hover:to-primary-dark text-white px-8 py-4 rounded-xl text-lg font-medium transition-all transform hover:scale-105 hover:shadow-lg"
+              className="mt-8 bg-gradient-to-r from-secondary to-primary dark:from-secondary-pro dark:to-accent-pro hover:from-secondary-dark hover:to-primary-dark dark:hover:from-secondary-pro/80 dark:hover:to-accent-pro/80 text-white px-8 py-4 rounded-xl text-lg font-medium transition-all transform hover:scale-105 hover:shadow-lg"
             >
-              Let's Get Started
+              Get Started
             </button>
           </div>
         );
@@ -472,23 +547,23 @@ const Onboarding = (props) => {
       case 1:
         return (
           <div className="space-y-6">
-            <h3 className="text-2xl font-bold text-primary dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">Personal Information</h3>
+            <h3 className="text-2xl font-bold text-primary dark:text-secondary-pro border-b border-gray-200 dark:border-gray-700 pb-2">Personal Information</h3>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
               {/* Dynamic Personal Information Fields */}
               {[
-                { id: 'name', label: 'Name', type: 'text', icon: '👤' },
-                { id: 'age', label: 'Age', type: 'number', icon: '🎂' },
-                { id: 'occupation', label: 'Occupation', type: 'text', icon: '💼' },
-                { id: 'education', label: 'Education', type: 'text', icon: '🎓' },
-                { id: 'location', label: 'Location', type: 'text', icon: '📍' },
-                { id: 'phone', label: 'Phone Number', type: 'tel', icon: '📱' },
-                { id: 'familySize', label: 'Family Size', type: 'number', min: '1', icon: '👨‍👩‍👧‍👦' },
-                { id: 'monthlyIncome', label: 'Monthly Income (₹)', type: 'number', icon: '💰' }
+                { id: 'name', label: 'Name', type: 'text', icon: '👤', required: true },
+                { id: 'age', label: 'Age', type: 'number', icon: '🎂', required: true },
+                { id: 'occupation', label: 'Occupation', type: 'text', icon: '💼', required: false },
+                { id: 'education', label: 'Education', type: 'text', icon: '🎓', required: false },
+                { id: 'location', label: 'Location', type: 'text', icon: '📍', required: false },
+                { id: 'phone', label: 'Phone Number', type: 'tel', icon: '📱', required: false },
+                { id: 'familySize', label: 'Family Size', type: 'number', min: '1', icon: '👨‍👩‍👧‍👦', required: false },
+                { id: 'monthlyIncome', label: 'Annual Income (₹)', type: 'number', icon: '💰', required: true }
               ].map(field => (
                 <div key={field.id} className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
                   <label htmlFor={field.id} className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    <span className="text-lg">{field.icon}</span> {field.label}
+                    <span className="text-lg">{field.icon}</span> {field.label} {field.required && <span className="text-red-500">*</span>}
                   </label>
                   <input
                     type={field.type}
@@ -496,9 +571,9 @@ const Onboarding = (props) => {
                     name={field.id}
                     value={formData[field.id]}
                     onChange={handleChange}
-                    className="input-field w-full bg-gray-50 dark:bg-gray-900 border-0 focus:ring-2 focus:ring-primary text-sm sm:text-base"
+                    className="input-field w-full bg-gray-50 dark:bg-gray-900 border-0 focus:ring-2 focus:ring-secondary-pro text-sm sm:text-base text-gray-900 dark:text-gray-100"
                     min={field.min}
-                    required
+                    required={field.required}
                     placeholder={`Enter your ${field.label.toLowerCase()}`}
                   />
                 </div>
@@ -510,7 +585,7 @@ const Onboarding = (props) => {
       case 2:
         return (
           <div className="space-y-6">
-            <h3 className="text-2xl font-bold text-primary dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">Financial Goals</h3>
+            <h3 className="text-2xl font-bold text-primary dark:text-secondary-pro border-b border-gray-200 dark:border-gray-700 pb-2">Financial Goals</h3>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Dynamic Goals Section */}
@@ -529,7 +604,7 @@ const Onboarding = (props) => {
                 }
               ].map(goalGroup => (
                 <div key={goalGroup.id} className="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
-                  <label className="flex items-center gap-2 text-lg font-medium text-primary dark:text-primary-light mb-3">
+                  <label className="flex items-center gap-2 text-lg font-medium text-primary dark:text-secondary-pro mb-3">
                     <span>{goalGroup.icon}</span> {goalGroup.label}
                   </label>
                   <div className="grid grid-cols-2 gap-3">
@@ -541,10 +616,23 @@ const Onboarding = (props) => {
                           name={`${goalGroup.id}-${goal}`}
                           checked={formData[goalGroup.id].includes(goal)}
                           onChange={handleChange}
-                          className="h-5 w-5 text-secondary focus:ring-accent border-gray-300 rounded"
+                          className="h-5 w-5 text-secondary focus:ring-secondary-pro border-gray-300 rounded"
                         />
                         <label htmlFor={`${goalGroup.id}-${goal}`} className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
-                          {goal}
+                          {goal === 'Emergency Fund' ? 'Emergency Fund' :
+                           goal === 'Vacation' ? 'Vacation' :
+                           goal === 'Education' ? 'Education' :
+                           goal === 'Vehicle' ? 'Vehicle' :
+                           goal === 'Home Appliances' ? 'Home Appliances' :
+                           goal === 'Debt Repayment' ? 'Debt Repayment' :
+                           goal === 'Wedding' ? 'Wedding' :
+                           goal === 'Retirement' ? 'Retirement' :
+                           goal === 'Home Purchase' ? 'Home Purchase' :
+                           goal === 'Children Education' ? 'Children Education' :
+                           goal === 'Wealth Building' ? 'Wealth Building' :
+                           goal === 'Starting Business' ? 'Starting Business' :
+                           goal === 'Foreign Travel' ? 'Foreign Travel' :
+                           goal === 'Financial Independence' ? 'Financial Independence' : goal}
                         </label>
                       </div>
                     ))}
@@ -555,7 +643,7 @@ const Onboarding = (props) => {
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
               <div className="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
-                <label htmlFor="riskTolerance" className="flex items-center gap-2 text-lg font-medium text-primary dark:text-primary-light mb-3">
+                <label htmlFor="riskTolerance" className="flex items-center gap-2 text-lg font-medium text-primary dark:text-secondary-pro mb-3">
                   <span>⚖️</span> Risk Tolerance
                 </label>
                 <select
@@ -563,8 +651,9 @@ const Onboarding = (props) => {
                   name="riskTolerance"
                   value={formData.riskTolerance}
                   onChange={handleChange}
-                  className="input-field w-full bg-gray-50 dark:bg-gray-900 border-0 focus:ring-2 focus:ring-primary"
+                  className="input-field w-full bg-gray-50 dark:bg-gray-900 border-0 focus:ring-2 focus:ring-secondary-pro text-gray-900 dark:text-gray-100"
                 >
+                  <option value="">Select Risk Tolerance</option>
                   <option value="very_low">Very Low - I want maximum safety with minimal risk</option>
                   <option value="low">Low - I prefer stable investments with lower returns</option>
                   <option value="medium">Medium - I can accept some fluctuations for better returns</option>
@@ -574,7 +663,7 @@ const Onboarding = (props) => {
               </div>
               
               <div className="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
-                <label htmlFor="investmentTimeframe" className="flex items-center gap-2 text-lg font-medium text-primary dark:text-primary-light mb-3">
+                <label htmlFor="investmentTimeframe" className="flex items-center gap-2 text-lg font-medium text-primary dark:text-secondary-pro mb-3">
                   <span>⏱️</span> Investment Timeframe
                 </label>
                 <select
@@ -582,8 +671,9 @@ const Onboarding = (props) => {
                   name="investmentTimeframe"
                   value={formData.investmentTimeframe}
                   onChange={handleChange}
-                  className="input-field w-full bg-gray-50 dark:bg-gray-900 border-0 focus:ring-2 focus:ring-primary"
+                  className="input-field w-full bg-gray-50 dark:bg-gray-900 border-0 focus:ring-2 focus:ring-secondary-pro text-gray-900 dark:text-gray-100"
                 >
+                  <option value="">Select Investment Timeframe</option>
                   <option value="short_term">Short Term (1-3 years)</option>
                   <option value="medium_term">Medium Term (3-7 years)</option>
                   <option value="long_term">Long Term (7+ years)</option>
@@ -596,13 +686,13 @@ const Onboarding = (props) => {
       case 3:
         return (
           <div className="space-y-6">
-            <h3 className="text-2xl font-bold text-primary dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">Investment Experience</h3>
+            <h3 className="text-2xl font-bold text-primary dark:text-secondary-pro border-b border-gray-200 dark:border-gray-700 pb-2">Investment Experience</h3>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
                 <div className="flex items-center mb-4">
                   <span className="text-2xl mr-3">💹</span>
-                  <h4 className="text-lg font-medium text-primary dark:text-primary-light">Current Investments</h4>
+                  <h4 className="text-lg font-medium text-primary dark:text-secondary-pro">Current Investments</h4>
                 </div>
                 <div className="flex items-center p-2 rounded-md bg-gray-50 dark:bg-gray-700 mb-4">
                   <input
@@ -611,7 +701,7 @@ const Onboarding = (props) => {
                     name="hasExistingInvestments"
                     checked={formData.hasExistingInvestments}
                     onChange={handleChange}
-                    className="h-5 w-5 text-secondary focus:ring-accent border-gray-300 rounded"
+                    className="h-5 w-5 text-secondary focus:ring-secondary-pro border-gray-300 rounded"
                   />
                   <label htmlFor="hasExistingInvestments" className="ml-2 block text-sm font-medium text-gray-900 dark:text-gray-300">
                     I have existing investments
@@ -641,7 +731,7 @@ const Onboarding = (props) => {
                             name={`investmentTypes-${type}`}
                             checked={formData.investmentTypes.includes(type)}
                             onChange={handleChange}
-                            className="h-5 w-5 text-secondary focus:ring-accent border-gray-300 rounded"
+                            className="h-5 w-5 text-secondary focus:ring-secondary-pro border-gray-300 rounded"
                           />
                           <label htmlFor={`investmentTypes-${type}`} className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
                             {type}
@@ -656,19 +746,20 @@ const Onboarding = (props) => {
               <div className="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
                 <div className="flex items-center mb-4">
                   <span className="text-2xl mr-3">📚</span>
-                  <h4 className="text-lg font-medium text-primary dark:text-primary-light">Financial Knowledge</h4>
+                  <h4 className="text-lg font-medium text-primary dark:text-secondary-pro">Financial Knowledge</h4>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">How would you rate your understanding of financial concepts and investment vehicles?</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">How would you assess your understanding of financial concepts and investment vehicles?</p>
                 <select
                   id="knowledgeLevel"
                   name="knowledgeLevel"
                   value={formData.knowledgeLevel}
                   onChange={handleChange}
-                  className="input-field w-full bg-gray-50 dark:bg-gray-900 border-0 focus:ring-2 focus:ring-primary"
+                  className="input-field w-full bg-gray-50 dark:bg-gray-900 border-0 focus:ring-2 focus:ring-secondary-pro text-gray-900 dark:text-gray-100"
                 >
+                  <option value="">Select Knowledge Level</option>
                   <option value="beginner">Beginner - I'm new to investing</option>
                   <option value="intermediate">Intermediate - I understand basic investment concepts</option>
-                  <option value="advanced">Advanced - I'm experienced with various investment vehicles</option>
+                  <option value="advanced">Advanced - I have experience with various investment vehicles</option>
                 </select>
               </div>
             </div>
@@ -678,7 +769,7 @@ const Onboarding = (props) => {
       case 4:
         return (
           <div className="space-y-6">
-            <h3 className="text-2xl font-bold text-primary dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">Psychological & Cultural Profile</h3>
+            <h3 className="text-2xl font-bold text-primary dark:text-secondary-pro border-b border-gray-200 dark:border-gray-700 pb-2">Psychological & Cultural Profile</h3>
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Dynamic Dropdowns for Psychological Profile */}
@@ -689,7 +780,7 @@ const Onboarding = (props) => {
                   icon: '😰',
                   options: [
                     { value: 'low', label: 'Low - I rarely worry about finances' },
-                    { value: 'medium', label: 'Medium - I sometimes worry about finances' },
+                    { value: 'medium', label: 'Medium - I occasionally worry about finances' },
                     { value: 'high', label: 'High - I frequently worry about finances' }
                   ]
                 },
@@ -718,15 +809,16 @@ const Onboarding = (props) => {
                 <div key={field.id} className="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
                   <div className="flex items-center mb-3">
                     <span className="text-2xl mr-2">{field.icon}</span>
-                    <label htmlFor={field.id} className="text-lg font-medium text-primary dark:text-primary-light">{field.label}</label>
+                    <label htmlFor={field.id} className="text-lg font-medium text-primary dark:text-secondary-pro">{field.label}</label>
                   </div>
                   <select
                     id={field.id}
                     name={field.id}
                     value={formData[field.id]}
                     onChange={handleChange}
-                    className="input-field w-full bg-gray-50 dark:bg-gray-900 border-0 focus:ring-2 focus:ring-primary"
+                    className="input-field w-full bg-gray-50 dark:bg-gray-900 border-0 focus:ring-2 focus:ring-secondary-pro text-gray-900 dark:text-gray-100"
                   >
+                    <option value="">Select {field.label}</option>
                     {field.options.map(option => (
                       <option key={option.value} value={option.value}>{option.label}</option>
                     ))}
@@ -739,9 +831,9 @@ const Onboarding = (props) => {
               <div className="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
                 <div className="flex items-center mb-3">
                   <span className="text-2xl mr-2">🌍</span>
-                  <label htmlFor="culturalBackground" className="text-lg font-medium text-primary dark:text-primary-light">Cultural Background</label>
+                  <label htmlFor="culturalBackground" className="text-lg font-medium text-primary dark:text-secondary-pro">Cultural Background</label>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Your cultural background can influence your financial decisions and goals.</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">Your cultural background may influence your financial decisions and goals.</p>
                 <input
                   type="text"
                   id="culturalBackground"
@@ -749,22 +841,22 @@ const Onboarding = (props) => {
                   value={formData.culturalBackground}
                   onChange={handleChange}
                   placeholder="Enter your cultural background"
-                  className="input-field w-full bg-gray-50 dark:bg-gray-900 border-0 focus:ring-2 focus:ring-primary"
+                  className="input-field w-full bg-gray-50 dark:bg-gray-900 border-0 focus:ring-2 focus:ring-secondary-pro text-gray-900 dark:text-gray-100"
                 />
               </div>
               
               <div className="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
                 <div className="flex items-center mb-3">
                   <span className="text-2xl mr-2">💭</span>
-                  <label className="text-lg font-medium text-primary dark:text-primary-light">Financial Beliefs</label>
+                  <label className="text-lg font-medium text-primary dark:text-secondary-pro">Financial Beliefs</label>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Select the financial beliefs that resonate with you.</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">Select financial beliefs that resonate with you.</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg">
                   {[
                     'Saving is important', 
                     'Investing is risky', 
-                    'Financial security is priority', 
-                    'Wealth creation takes time', 
+                    'Financial security is a priority', 
+                    'Wealth building takes time', 
                     'Money should be enjoyed',
                     'Debt should be avoided',
                     'Financial education is essential'
@@ -776,7 +868,7 @@ const Onboarding = (props) => {
                         name={`financialBeliefs-${belief}`}
                         checked={formData.financialBeliefs.includes(belief)}
                         onChange={handleChange}
-                        className="h-5 w-5 text-secondary focus:ring-accent border-gray-300 rounded"
+                        className="h-5 w-5 text-secondary focus:ring-secondary-pro border-gray-300 rounded"
                       />
                       <label htmlFor={`financialBeliefs-${belief}`} className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
                         {belief}
@@ -797,15 +889,15 @@ const Onboarding = (props) => {
   // Render success screen (final step)
   const renderSuccessScreen = () => {
     return (
-      <div className="bg-gradient-to-r from-indigo-500/10 to-green-500/10 min-h-[350px] flex flex-col justify-center items-center text-center p-8 rounded-2xl shadow-lg border border-green-100 dark:border-green-900">
-        <div className="w-32 h-32 mb-6 flex items-center justify-center bg-green-100 dark:bg-green-900/30 rounded-full">
+      <div className="bg-gradient-to-r from-indigo-500/10 to-green-500/10 dark:from-secondary-pro/20 dark:to-accent-pro/20 min-h-[350px] flex flex-col justify-center items-center text-center p-8 rounded-2xl shadow-lg border border-green-100 dark:border-secondary-pro/30">
+        <div className="w-32 h-32 mb-6 flex items-center justify-center bg-green-100 dark:bg-secondary-pro/20 rounded-full">
           <span className="text-6xl animate-bounce">🎉</span>
         </div>
-        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-green-500 bg-clip-text text-transparent">Profile Created Successfully!</h1>
-        <p className="text-gray-600 dark:text-gray-300 mt-4 text-xl max-w-2xl">You're all set to start your financial journey! We've prepared personalized recommendations for you.</p>
+        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-green-500 dark:from-secondary-pro dark:to-accent-pro bg-clip-text text-transparent">Profile Successfully Created!</h1>
+        <p className="text-gray-600 dark:text-gray-300 mt-4 text-xl max-w-2xl">You're ready to start your financial journey! We've prepared personalized recommendations for you.</p>
         <button 
           onClick={() => navigate('/dashboard')}
-          className="mt-8 bg-gradient-to-r from-green-500 to-primary hover:from-green-600 hover:to-primary-dark text-white px-8 py-4 rounded-xl text-lg font-medium transition-all transform hover:scale-105 hover:shadow-lg"
+          className="mt-8 bg-gradient-to-r from-green-500 to-primary dark:from-secondary-pro dark:to-accent-pro hover:from-green-600 hover:to-primary-dark dark:hover:from-secondary-pro/80 dark:hover:to-accent-pro/80 text-white px-8 py-4 rounded-xl text-lg font-medium transition-all transform hover:scale-105 hover:shadow-lg"
         >
           Go to Dashboard
         </button>
@@ -816,8 +908,8 @@ const Onboarding = (props) => {
   // Render motivational feedback screen
   const renderFeedbackScreen = (message, emoji) => {
     return (
-      <div className="bg-gradient-to-r from-background-pro to-[#e7f9f7] p-6 rounded-xl text-center">
-        <p className="text-accent-pro text-xl">{emoji} {message}</p>
+      <div className="bg-gradient-to-r from-background-pro to-[#e7f9f7] dark:from-gray-800 dark:to-gray-700 p-6 rounded-xl text-center">
+        <p className="text-accent-pro dark:text-secondary-pro text-xl">{emoji} {message}</p>
         <button 
           onClick={nextStep}
           className="mt-6 bg-secondary-pro hover:bg-accent-pro text-white px-6 py-3 rounded-lg transition-all transform hover:scale-105"
@@ -829,7 +921,7 @@ const Onboarding = (props) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-indigo-950 py-4 px-3 sm:py-8 sm:px-6 lg:px-8 overflow-x-hidden pt-12 sm:pt-16 md:pt-20">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-indigo-950 py-4 px-3 sm:py-8 sm:px-6 lg:px-8 overflow-y-auto overflow-x-hidden pt-12 sm:pt-16 md:pt-20 h-full">
       {confetti && (
         <div className="confetti-container">
           {[...Array(50)].map((_, i) => (
@@ -858,16 +950,16 @@ const Onboarding = (props) => {
         
         {currentStep > 0 && currentStep < 5 && (
           <div className="mb-6">
-            <h2 className="text-center text-xl sm:text-2xl md:text-3xl font-extrabold text-primary-pro dark:text-white">
-              {currentStep === 1 ? 'Tell us about yourself' : 
+            <h2 className="text-center text-xl sm:text-2xl md:text-3xl font-extrabold text-primary-pro dark:text-secondary-pro">
+              {currentStep === 1 ? 'Tell Us About Yourself' : 
                currentStep === 2 ? 'Your Financial Goals' :
                currentStep === 3 ? 'Investment Experience' :
                'Your Financial Personality'}
             </h2>
-            <p className="mt-2 text-center text-xs sm:text-sm text-text-pro dark:text-gray-400 max-w-2xl mx-auto">
+            <p className="mt-2 text-center text-xs sm:text-sm text-text-pro dark:text-gray-300 max-w-2xl mx-auto">
               {currentStep === 1 ? 'This helps us personalize your investment experience' : 
                currentStep === 2 ? 'What are you saving for?' :
-               currentStep === 3 ? 'No worries if you\'re just starting out' :
+               currentStep === 3 ? 'Don\'t worry if you\'re just getting started' :
                'Understanding how you think about money'}
             </p>
             
@@ -878,19 +970,19 @@ const Onboarding = (props) => {
                   key={step}
                   className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full transition-all duration-300 ${
                     currentStep === step 
-                      ? 'bg-secondary-pro scale-125 shadow-sm' 
+                      ? 'bg-secondary-pro dark:bg-accent-pro scale-125 shadow-sm' 
                       : currentStep > step 
-                        ? 'bg-secondary-pro' 
-                        : 'bg-background-pro border-2 border-secondary-pro'
+                        ? 'bg-secondary-pro dark:bg-accent-pro' 
+                        : 'bg-background-pro dark:bg-gray-800 border-2 border-secondary-pro dark:border-secondary-pro'
                   }`}
                 />
               ))}
             </div>
             
             {/* Progress bar - Improved height and animation */}
-            <div className="mt-3 h-2 sm:h-3 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden shadow-inner">
+            <div className="mt-3 h-2 sm:h-3 w-full bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden shadow-inner">
               <div 
-                className="h-full bg-secondary-pro rounded-full transition-all duration-500 ease-out" 
+                className="h-full bg-secondary-pro dark:bg-accent-pro rounded-full transition-all duration-500 ease-out" 
                 style={{ width: `${progress}%` }}
               ></div>
             </div>

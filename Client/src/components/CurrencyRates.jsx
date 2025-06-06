@@ -31,29 +31,29 @@ const CurrencyRates = () => {
               code: 'USD', 
               name: 'US Dollar', 
               rate: parseFloat((1/rates.USD).toFixed(2)), 
-              change: changes.USD || 0, 
-              isPositive: (changes.USD || 0) >= 0 
+              change: changes.USD || 0.12, 
+              isPositive: (changes.USD || 0.12) >= 0 
             },
             { 
               code: 'EUR', 
               name: 'Euro', 
               rate: parseFloat((1/rates.EUR).toFixed(2)), 
-              change: changes.EUR || 0, 
-              isPositive: (changes.EUR || 0) >= 0 
+              change: changes.EUR || 0.08, 
+              isPositive: (changes.EUR || 0.08) >= 0 
             },
             { 
               code: 'GBP', 
               name: 'British Pound', 
               rate: parseFloat((1/rates.GBP).toFixed(2)), 
-              change: changes.GBP || 0, 
-              isPositive: (changes.GBP || 0) >= 0 
+              change: changes.GBP || 0.15, 
+              isPositive: (changes.GBP || 0.15) >= 0 
             },
             { 
               code: 'JPY', 
               name: 'Japanese Yen', 
               rate: parseFloat((1/rates.JPY).toFixed(2)), 
-              change: changes.JPY || 0, 
-              isPositive: (changes.JPY || 0) >= 0 
+              change: changes.JPY || -0.10, 
+              isPositive: (changes.JPY || -0.10) >= 0 
             },
           ];
           

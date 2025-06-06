@@ -63,6 +63,16 @@ exports.register = async (req, res, next) => {
       { expiresIn: process.env.JWT_EXPIRES_IN }
     );
 
+    // Set token as HTTP-only cookie
+    const cookieOptions = {
+      expires: new Date(Date.now() + parseInt(process.env.JWT_COOKIE_EXPIRES_IN || '7') * 24 * 60 * 60 * 1000),
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Allow cross-site cookies in production
+    };
+    
+    res.cookie('token', token, cookieOptions);
+
     // Generate verification token
     const verificationToken = jwt.sign(
       { userId: user._id },
@@ -161,8 +171,18 @@ exports.login = async (req, res, next) => {
       { expiresIn: process.env.JWT_EXPIRES_IN }
     );
 
+    // Set token as HTTP-only cookie
+    const cookieOptions = {
+      expires: new Date(Date.now() + parseInt(process.env.JWT_COOKIE_EXPIRES_IN || '7') * 24 * 60 * 60 * 1000),
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Allow cross-site cookies in production
+    };
+    
+    res.cookie('token', token, cookieOptions);
+
     res.status(200).json({
-      token,
+      token, // Still include token in response for compatibility
       user: {
         id: user._id,
         email: user.email,
@@ -490,6 +510,24 @@ exports.changePassword = async (req, res, next) => {
     res.status(200).json({ message: 'Password changed successfully' });
   } catch (error) {
     console.error('Change password error:', error);
+    next(error);
+  }
+};
+
+// Logout user
+exports.logout = async (req, res, next) => {
+  try {
+    // Clear the token cookie
+    res.cookie('token', '', {
+      expires: new Date(0),
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+    });
+
+    res.status(200).json({ message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Logout error:', error);
     next(error);
   }
 };

@@ -9,19 +9,17 @@ const api = axios.create({
   },
 });
 
-// Add request interceptor to include auth token
+// Request interceptor (no longer needed for auth token as it's handled by cookies)
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-      // Ensure headers object exists
-      config.headers = config.headers || {};
-      // Set content type if not already set
-      if (!config.headers['Content-Type']) {
-        config.headers['Content-Type'] = 'application/json';
-      }
+    // Ensure headers object exists
+    config.headers = config.headers || {};
+    // Set content type if not already set
+    if (!config.headers['Content-Type']) {
+      config.headers['Content-Type'] = 'application/json';
     }
+    // Add withCredentials to send cookies with requests
+    config.withCredentials = true;
     return config;
   },
   (error) => Promise.reject(error)
@@ -40,6 +38,7 @@ const apiService = {
     sendVerificationEmail: (data) => api.post('/auth/send-verification-email', data),
     verifyEmail: (data) => api.post('/auth/verify-email', data),
     changePassword: (data) => api.post('/auth/change-password', data),
+    logout: () => api.post('/auth/logout'),
   },
   
   // User endpoints
@@ -51,8 +50,8 @@ const apiService = {
   
   // Onboarding endpoints
   onboarding: {
-    submitOnboarding: (onboardingData) => api.post('/onboarding', onboardingData),
-    getOnboardingStatus: () => api.get('/onboarding/status'),
+    submitOnboarding: (onboardingData) => api.post('/user/onboarding', onboardingData),
+    getOnboardingStatus: () => api.get('/user/onboarding-status'),
     submitChatbotOnboarding: (onboardingData) => api.post('/onboarding/chatbot', onboardingData),
   },
   
@@ -85,7 +84,27 @@ chatbot: {
     return api.get(`/chatbot/user/${formattedUserId}/history`);
   },
   getChatSession: (sessionId) => api.get(`/chatbot/session/${sessionId}`),
-  deleteSession: (sessionId) => api.delete(`/chatbot/session/${sessionId}`),
+  deleteSession: (sessionId) => {
+    // Ensure sessionId is a valid string before making the API call
+    if (!sessionId || typeof sessionId !== 'string') {
+      console.error('Invalid sessionId provided to deleteSession:', sessionId);
+      return Promise.reject(new Error('Invalid sessionId'));
+    }
+    
+    // Log the sessionId being used for debugging
+    console.log('API call: Deleting session with ID:', sessionId);
+    
+    // Make the API call to delete the session
+    return api.delete(`/chatbot/session/${sessionId}`)
+      .then(response => {
+        console.log('Delete session API response:', response);
+        return response;
+      })
+      .catch(error => {
+        console.error('Delete session API error:', error);
+        throw error;
+      });
+  },
   clearAllChats: () => api.delete('/chatbot/history'),
   submitFeedback: (sessionId, feedbackData) => api.post(`/chatbot/feedback/${sessionId}`, feedbackData),
 },

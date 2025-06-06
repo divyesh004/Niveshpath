@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext'; // Import Auth Context
 import Onboarding from './Onboarding'; // Import Onboarding component
 import DOMPurify from 'dompurify'; // For sanitizing HTML
 import {  toast } from 'react-toastify';
+import MobileNavigation from '../components/MobileNavigation';
 
 const formatBotMessage = (text) => {
   if (!text) return '';
@@ -1043,15 +1044,20 @@ const formatBotMessage = (text) => {
 
 const Chatbot = ({ darkMode, setDarkMode }) => {
   const [sessionId, setSessionId] = useState(null); // Ensure sessionId state is here
+  const [showScrollTop, setShowScrollTop] = useState(false); // State to control scroll to top button visibility
 
   // Function to load a chat from history (now inside Chatbot component)
   const loadChatFromHistory = async (chat) => {
+    // First fetch the latest chat history to ensure we have the most up-to-date data
+    await fetchChatHistory();
+    
     // Ensure chat object and chat.id are present before trying to load
     if (!chat || !chat.id) {
       toast.error('Invalid chat data. Cannot load.');
       setMessages([]);
       setShowWelcome(true);
       setSessionId(null);
+      sessionStorage.removeItem('niveshpath_session_id'); // Clear session ID from sessionStorage
       return;
     }
 
@@ -1107,21 +1113,42 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
         const sortedMessages = formattedMessages.sort((a, b) => 
           new Date(a.timestamp) - new Date(b.timestamp)
         );
+        // First hide welcome message before setting messages
+        setShowWelcome(false);
+        // Then set messages
         setMessages(sortedMessages);
+        console.log('Chat loaded with messages:', sortedMessages.length);
         toast.success(`Chat loaded: ${chat.title || 'Chat'}`);
       } else {
+        // If there are no messages, show the welcome message
+        setShowWelcome(true);
+        // Then set messages
         setMessages([]); // Set to empty array if no valid formatted messages
-        // No toast here for empty chat, just show the empty chat interface
+        console.log('Chat loaded with empty messages array');
+        toast.info('This chat session has no messages yet.');
       }
       
+      // Set the session ID and save it to sessionStorage
       setSessionId(chat.id);
-      setShowWelcome(false);
+      sessionStorage.setItem('niveshpath_session_id', chat.id);
+      
+      // Clear input field and any errors
       setInput('');
       setError(null);
       
+      // On mobile, close the sidebar after loading a chat
       if (isMobile) {
         setShowSidebar(false);
       }
+      
+      // Scroll to the bottom of the chat
+      setTimeout(() => {
+        if (messagesEndRef.current) {
+          messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+        // Double check that welcome message is hidden after a delay
+        setShowWelcome(false);
+      }, 100);
     } catch (error) {
       console.error('Error loading or formatting chat messages:', error);
       // Check if the error is the one we specifically want to handle differently
@@ -1135,6 +1162,7 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
       setShowWelcome(true); // Show welcome message for new chat
       setMessages([]);
       setSessionId(null); // Reset session ID as well
+      sessionStorage.removeItem('niveshpath_session_id'); // Clear session ID from sessionStorage
       }
   };
   
@@ -1201,10 +1229,26 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
     
     checkOnboardingStatus();
     
-    // Show welcome message for new sessions
-    setShowWelcome(true);
+    // Restore session ID from sessionStorage if available
+    const savedSessionId = sessionStorage.getItem('niveshpath_session_id');
+    if (savedSessionId) {
+      setSessionId(savedSessionId);
+      setShowWelcome(false); // Don't show welcome message if we have a session
+    } else {
+      // Show welcome message only for new sessions
+      setShowWelcome(true);
+    }
     
   }, [currentUser, isAuthenticated, navigate, onboardingCompleted]);
+  
+  // Save sessionId to sessionStorage whenever it changes
+  useEffect(() => {
+    if (sessionId) {
+      sessionStorage.setItem('niveshpath_session_id', sessionId);
+    }
+  }, [sessionId]);
+  
+  // This useEffect has been replaced with the one using sessionStorage above
   
   // Handle onboarding completion
   const handleOnboardingComplete = () => {
@@ -1215,32 +1259,26 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
   const fetchChatHistory = async () => {
     if (!isAuthenticated) return;
 
-        setLoading(true);
+    setLoading(true);
     setError(null);
     let actualApiChatSessions = [];
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.error('No authentication token found in fetchChatHistory');
-        // setError('Authentication required. Please log in.'); // User-facing error
-        // toast.error('Authentication required. Please log in.');
-        // setLoading(false);
-        // return; 
-        throw new Error('Authentication required. No token provided');
-      }
+      // Authentication is now handled via HTTP-only cookies
+      // and apiService automatically includes withCredentials: true
 
       const userId = currentUser?.id?.toString().replace(/^:/, '');
       let response;
 
       if (userId) {
-                response = await apiService.chatbot.getChatHistory(userId);
+        response = await apiService.chatbot.getChatHistory(userId);
       } else {
         // According to user, history should only be fetched if userId is present.
         // If no userId, we should not attempt to fetch general history.
-                setMessages([]);
+        setMessages([]);
         setChatHistory([]);
         setShowWelcome(true);
+        sessionStorage.removeItem('niveshpath_session_id'); // Clear session ID if no user ID
         setLoading(false);
         return;
         // console.log("Fetching general history as userId is not available. This might be empty or not supported by backend for guests.");
@@ -1275,33 +1313,37 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
 
       // Process API data: backend returns sessions, each containing messages
       const processedHistory = actualApiChatSessions.map(session => {
-        const sessionId = session.sessionId || session._id; // _id is the session's ID from MongoDB
+        // Make sure we're using the MongoDB _id as the sessionId for API calls
+        const mongoId = session._id;
+        if (!mongoId) {
+          console.warn("Skipping session due to missing MongoDB _id:", session);
+          return null; // Skip if no MongoDB _id
+        }
+        
+        // Use a consistent ID for local reference
+        const sessionId = session.sessionId || mongoId;
+        
         let title = '';
         // Check if the session object itself has a 'query' field from the backend.
         if (session.query && typeof session.query === 'string' && session.query.trim() !== '') {
           const queryText = session.query.trim();
           title = queryText.substring(0, 60) + (queryText.length > 60 ? "..." : "");
-                  } else if (session.messages && session.messages.length > 0) {
+        } else if (session.messages && session.messages.length > 0) {
           // If no session.query, try to get it from the first user message.
           const firstUserMessage = session.messages.find(m => m.role === 'user');
           if (firstUserMessage && firstUserMessage.content && typeof firstUserMessage.content === 'string' && firstUserMessage.content.trim() !== '') {
             const queryText = firstUserMessage.content.trim();
             title = queryText.substring(0, 60) + (queryText.length > 60 ? "..." : "");
-                      }
+          }
         }
 
         // If no title could be derived from session.query or the first user message, generate a default one.
         if (!title) {
-            title = `Chat Session - ${new Date(session.updatedAt || session.createdAt || Date.now()).toLocaleDateString()}`;
-                    }
+          title = `Chat Session - ${new Date(session.updatedAt || session.createdAt || Date.now()).toLocaleDateString()}`;
+        }
         
         const date = session.updatedAt || session.createdAt || new Date().toISOString();
         const sessionUserId = session.userId;
-
-        if (!sessionId) {
-          console.warn("Skipping session due to missing sessionId:", session);
-          return null; // Skip if no sessionId
-        }
 
         let messagesInSession = [];
         if (session.messages && Array.isArray(session.messages)) {
@@ -1314,7 +1356,8 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
         }
         
         return {
-          id: sessionId,
+          id: sessionId, // Local reference ID
+          sessionId: mongoId, // Store the original MongoDB _id for API calls
           title: title,
           date: date, // Store raw date for sorting, format for display later
           messages: messagesInSession,
@@ -1326,13 +1369,42 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
       
       if (processedHistory.length > 0) {
         setChatHistory(processedHistory);
-        if (messages.length === 0) { // Only show welcome if no active chat is loaded
+        
+        // Check if we have a saved session ID in sessionStorage
+        const savedSessionId = sessionStorage.getItem('niveshpath_session_id');
+        
+        if (savedSessionId) {
+          // Find the chat with the matching ID
+          const savedChat = processedHistory.find(chat => chat.id === savedSessionId);
+          
+          if (savedChat) {
+            // Load the saved chat
+            console.log('Restoring chat session from localStorage:', savedSessionId);
+            
+            if (savedChat.messages && savedChat.messages.length > 0) {
+              setMessages(savedChat.messages);
+              setShowWelcome(false);
+            } else {
+              setMessages([]);
+              setShowWelcome(true);
+            }
+          } else {  
+            // If the saved session ID doesn't match any chat, show welcome
+            if (messages.length === 0) { // Only show welcome if no active chat is loaded
+              setShowWelcome(true);
+            }
+          }
+        } else {
+          // If no saved session ID, show welcome if no messages
+          if (messages.length === 0) { // Only show welcome if no active chat is loaded
             setShowWelcome(true);
+          }
         }
       } else {
         setMessages([]);
         setChatHistory([]);
         setShowWelcome(true);
+        sessionStorage.removeItem('niveshpath_session_id'); // Clear session ID if no history
       }
 
     } catch (err) {
@@ -1374,8 +1446,24 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
       // If user is authenticated, delete from server too
       if (currentUser?.id) {
         try {
-          await apiService.chatbot.deleteSession(chatId);
-          toast.success('Chat successfully deleted from server');
+          // Check if chatId is a valid MongoDB ObjectId (24 character hex string)
+          // If not, try to get the sessionId from the chat object
+          const sessionId = chatToDelete.sessionId || chatId;
+          
+          if (!sessionId) {
+            throw new Error('No valid sessionId found for deletion');
+          }
+          
+          // Make sure we're using the correct sessionId for the API call
+          console.log('Deleting chat session with ID:', sessionId);
+          const response = await apiService.chatbot.deleteSession(sessionId);
+          console.log('Delete session response:', response);
+          
+          if (response && response.message) {
+            toast.success(response.message || 'Chat successfully deleted from server');
+          } else {
+            toast.success('Chat successfully deleted from server');
+          }
         } catch (apiError) {
           console.error('Error deleting chat from server:', apiError);
           toast.error('Problem deleting chat from server. It will be removed locally.');
@@ -1408,10 +1496,19 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
             setMessages([]); // Fallback: clear messages
             console.warn("welcomeMessage is not defined in Chatbot.jsx. Clearing messages instead.");
           }
-          // If you have an activeChatId state, reset it here: e.g., setActiveChatId(null);
+          // Clear session ID if the deleted chat was the active one
+          setSessionId(null);
+          sessionStorage.removeItem('niveshpath_session_id');
         }
       }
-      // localStorage.setItem(messagesKey, JSON.stringify([welcomeMessage])); // Removed: Do not update localStorage for messages
+      
+      // If the deleted chat ID matches the current session ID, clear it
+      const savedSessionId = sessionStorage.getItem('niveshpath_session_id');
+      if (savedSessionId === chatId) {
+        setSessionId(null);
+        sessionStorage.removeItem('niveshpath_session_id');
+      }
+      // No localStorage updates needed
     } catch (error) {
       console.error('Error in deleteChat function:', error);
       toast.error('Failed to delete chat. Please try again.');
@@ -1448,13 +1545,9 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
       setMessages([]);
       setShowWelcome(true);
       
-      // User-specific keys for localStorage are no longer needed here.
-      // const userKey = currentUser?.id || 'guest';
-      // const messagesKey = `chatMessages_${userKey}`;
-      // const historyKey = `chatHistory_${userKey}`;
-      
-      // localStorage.setItem(messagesKey, JSON.stringify([])); // Removed: Do not update localStorage for messages
-      // localStorage.setItem(historyKey, JSON.stringify([])); // Removed: Do not update localStorage for history
+      // Clear session ID
+      setSessionId(null);
+      sessionStorage.removeItem('niveshpath_session_id');
       
       // Create a default chat entry after clearing
       const defaultChat = {
@@ -1465,9 +1558,8 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
         userId: currentUser?.id || 'guest'
       };
       
-      // Update state and localStorage with the default chat
+      // Update state with the default chat
       setChatHistory([defaultChat]);
-      localStorage.setItem(historyKey, JSON.stringify([defaultChat]));
       
       // Show success message if not already shown
       if (!currentUser?.id) {
@@ -1505,14 +1597,6 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
     setMessages([]);
     setShowWelcome(true); // Show welcome message for new chat
     
-    // Get user-specific keys for localStorage
-    const userKey = currentUser?.id || 'guest';
-    const messagesKey = `chatMessages_${userKey}`;
-    const historyKey = `chatHistory_${userKey}`;
-    
-    // Update localStorage with empty messages array
-    localStorage.setItem(messagesKey, JSON.stringify([]));
-    
     // Reset input and error state
     setInput('');
     setError(null);
@@ -1521,6 +1605,10 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
     // Generate a unique ID for the new chat
     const newChatId = chatHistory.length > 0 ? 
       Math.max(...chatHistory.map(chat => chat.id)) + 1 : 1;
+      
+    // Set the new session ID
+    setSessionId(newChatId.toString());
+    sessionStorage.setItem('niveshpath_session_id', newChatId.toString());
     
     // Add new chat to history with user ID
     const newChatEntry = {
@@ -1539,9 +1627,6 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
     
     // Update chat history with new chat
     setChatHistory(updatedHistory);
-    
-    // Save updated history to localStorage
-    localStorage.setItem(historyKey, JSON.stringify(updatedHistory));
     
     // Close sidebar on mobile after starting new chat
     if (isMobile) {
@@ -1574,9 +1659,6 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
     const userMessage = { id: Date.now(), text: input, isBot: false };
     setMessages(prevMessages => {
       const updated = [...prevMessages, userMessage];
-      const userKey = currentUser?.id || 'guest';
-      const messagesKey = `chatMessages_${userKey}`;
-      localStorage.setItem(messagesKey, JSON.stringify(updated));
       return updated;
     });
     
@@ -1599,13 +1681,9 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
         
         setMessages(prevMessages => {
           const updated = [...prevMessages, botMessage];
-          const userKey = currentUser?.id || 'guest';
-          const messagesKey = `chatMessages_${userKey}`;
-          localStorage.setItem(messagesKey, JSON.stringify(updated));
 
           // Update chat history using the 'updated' messages array
           setChatHistory(prevChatHistory => {
-            const historyKey = `chatHistory_${currentUser?.id || 'guest'}`;
             let newHistoryState = [...prevChatHistory];
             let wasNewChatProcessed = false;
 
@@ -1620,8 +1698,6 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
               newHistoryState[0] = currentChat;
             }
             // If newHistoryState was empty, it remains empty. This assumes startNewChat correctly initializes history.
-            
-            localStorage.setItem(historyKey, JSON.stringify(newHistoryState));
             
             if (wasNewChatProcessed) {
               setNewChat(false); // Update newChat state here, based on processing within this update
@@ -1652,18 +1728,8 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
       };
       setMessages(prevMessages => {
         const updated = [...prevMessages, errorMessage];
-        const userKey = currentUser?.id || 'guest';
-        const messagesKey = `chatMessages_${userKey}`;
-        localStorage.setItem(messagesKey, JSON.stringify(updated));
         return updated;
       });
-      
-      // Get user-specific key for localStorage (already handled inside setMessages)
-      // const userKey = currentUser?.id || 'guest';
-      // const messagesKey = `chatMessages_${userKey}`;
-      
-      // Save to localStorage with user-specific key
-      localStorage.setItem(messagesKey, JSON.stringify(updatedMessages));
     } finally {
       setIsTyping(false);
     }
@@ -1727,7 +1793,30 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+  
+  // Add event listener for window scroll to show/hide scroll to top button
+  useEffect(() => {
+    const handleScroll = () => {
+      // Show button when user scrolls down 300px from the top
+      if (window.scrollY > 300) {
+        setShowScrollTop(true);
+      } else {
+        setShowScrollTop(false);
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
+  // Function to scroll to top
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
+  
   // If onboarding needs to be shown, render the Onboarding component
   if (showOnboarding) {
     return <Onboarding fromChatbot={true} onComplete={handleOnboardingComplete} />;
@@ -1735,6 +1824,19 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
   
   return (
     <div className="flex h-screen bg-white dark:bg-gray-900 overflow-hidden">
+      {/* Scroll to top button - only visible when scrolled down */}
+      {showScrollTop && (
+        <button 
+          onClick={scrollToTop}
+          className="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-50 p-3 rounded-full bg-gray-500 text-white shadow-lg hover:bg-gray-600 transition-all duration-300 border border-gray-400 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50"
+          aria-label="Scroll to top"
+          title="Scroll to top"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+          </svg>
+        </button>
+      )}
       <div className={`${showSidebar ? (isMobile ? 'w-64' : 'w-72') : 'w-0'} ${showSidebar && isMobile ? 'absolute z-30 h-screen' : ''} bg-white dark:bg-gray-800 text-gray-800 dark:text-white transition-all duration-300 overflow-hidden flex flex-col shadow-lg border-r border-gray-200 dark:border-gray-700`}>
         {/* New Chat Button - Enhanced modern style */}
         <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
@@ -1955,8 +2057,8 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
             </button>
           )}
           
-          {/* Empty state when no messages */}
-          {messages.length === 0 && (
+          {/* Empty state when no messages and showWelcome is true */}
+          {messages.length === 0 && showWelcome && (
             <div className="h-full flex flex-col items-center justify-center p-8 text-center">
               <div className="h-16 w-16 rounded-full bg-primary/10 dark:bg-secondary/20 flex items-center justify-center mb-4 shadow-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-primary dark:text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1985,6 +2087,19 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
                   <p className="font-medium text-gray-800 dark:text-white text-sm">"How should I plan for retirement in my 30s?"</p>
                 </button>
               </div>
+            </div>
+          )}
+          
+          {/* Empty state when no messages but showWelcome is false (chat history was loaded) */}
+          {messages.length === 0 && !showWelcome && (
+            <div className="h-full flex flex-col items-center justify-center p-8 text-center">
+              <div className="h-16 w-16 rounded-full bg-primary/10 dark:bg-secondary/20 flex items-center justify-center mb-4 shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-primary dark:text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Chat Session Loaded</h3>
+              <p className="text-gray-600 dark:text-gray-400 max-w-md mb-6">This chat session has no messages yet. Start a conversation below.</p>
             </div>
           )}
           {messages.map((message, index) => (
@@ -2102,8 +2217,8 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
           <div ref={messagesEndRef} />
         </div>
         {/* Input Form - Enhanced modern style */}
-        <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 sticky bottom-0 z-10 transition-all duration-300 shadow-lg">
-          <form onSubmit={handleSubmit} className="max-w-3xl mx-auto px-4 py-3 md:py-4 w-full">
+        <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 relative md:sticky md:bottom-0 z-10 transition-all duration-300 shadow-lg">
+          <form onSubmit={handleSubmit} className="max-w-3xl mx-auto px-4 py-2 sm:py-3 md:py-4 w-full">
             {/* Removed conditional heading to keep input position consistent */}
             {error && <div className="text-red-500 text-sm mb-2 font-medium bg-red-50 dark:bg-red-900/20 p-2 rounded-lg border border-red-100 dark:border-red-800/30">{error}</div>}
             <div className={`relative rounded-xl shadow-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 overflow-hidden hover:border-primary dark:hover:border-secondary transition-all duration-300 mx-auto max-w-3xl ml-auto mr-0 hover:shadow-lg focus-within:border-primary dark:focus-within:border-secondary focus-within:ring-2 focus-within:ring-primary/20 dark:focus-within:ring-secondary/20`}>
@@ -2112,7 +2227,7 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={isAuthenticated ? "Ask me about investments, financial planning, or any financial questions..." : "Please login to chat..."}
-              className="w-full p-4 pr-14 max-h-40 focus:outline-none bg-transparent text-gray-800 dark:text-white text-sm md:text-base resize-none transition-colors duration-200"
+              className="w-full p-3 sm:p-4 pr-14 max-h-40 focus:outline-none bg-transparent text-gray-800 dark:text-white text-sm md:text-base resize-none transition-colors duration-200 overflow-hidden"
               disabled={isTyping || loading || !isAuthenticated}
               rows="1"
               style={{ minHeight: '56px' }}
@@ -2139,7 +2254,7 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
               )}
             </button>
           </div>
-            <div className="flex justify-between items-center mt-2 text-xs text-gray-500 dark:text-gray-400">
+            <div className="flex justify-between items-center mt-1 sm:mt-2 text-xs text-gray-500 dark:text-gray-400">
               <div className="hidden md:flex items-center">
                 <kbd className="px-1.5 py-0.5 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-800 font-sans mr-1 shadow-sm">Enter</kbd> 
                 <span>to send</span>
@@ -2152,7 +2267,16 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
         </div>
         
         {/* Add Notion-like styling */}
-        <style jsx>{`
+        <style jsx={true}>{`
+          /* Mobile input field styling */
+          @media (max-width: 640px) {
+            textarea {
+              overflow: hidden !important;
+              height: auto !important;
+              max-height: 80px !important;
+            }
+          }
+          
           /* Notion-like content styling */
           .notion-like-content h1, .notion-like-content h2, .notion-like-content h3,
           .notion-like-content h4, .notion-like-content h5, .notion-like-content h6 {

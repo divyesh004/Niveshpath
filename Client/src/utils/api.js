@@ -13,20 +13,22 @@ async function apiRequest(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
   
   // Set default headers
-  const headers = { 
+  const headers = {
     'Content-Type': 'application/json',
     ...options.headers
   };
-  
-  // Add auth token if available
-  const token = localStorage.getItem('token');
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  
+
+  // Cookies will be sent automatically if credentials: 'include' is set
+  // and the backend CORS is configured correctly.
+  // const token = localStorage.getItem('token'); // REMOVED
+  // if (token) { // REMOVED
+  //   headers['Authorization'] = `Bearer ${token}`; // REMOVED
+  // }
+
   const config = {
     ...options,
-    headers
+    headers,
+    credentials: 'include' // ADDED: Ensure cookies are sent with fetch requests
   };
   
   try {
@@ -73,12 +75,13 @@ export const authAPI = {
   
   // Get current user
   getCurrentUser: () => {
-    return apiRequest('/auth/me');
+    // Ensure this request is a GET request, explicitly if needed by apiRequest structure
+    return apiRequest('/auth/me', { method: 'GET' });
   },
   
-  // Verify token
+  // Verify token (same as getCurrentUser for this setup)
   verifyToken: () => {
-    return apiRequest('/auth/me');
+    return apiRequest('/auth/me', { method: 'GET' });
   },
 
   forgotPassword: (data) => {

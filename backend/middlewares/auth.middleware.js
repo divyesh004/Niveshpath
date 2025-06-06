@@ -4,23 +4,23 @@ const User = require('../models/user.model');
 // Middleware to authenticate JWT token
 exports.authenticate = async (req, res, next) => {
   try {
-    // Get token from header
+    // Get token from header or cookie
+    let token;
+    
+    // Check Authorization header first
     const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ 
-        status: 'fail',
-        message: 'Authentication required. No token provided.' 
-      });
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
     }
-    
-    // Extract token
-    const token = authHeader.split(' ')[1];
+    // If no token in header, check cookies
+    else if (req.cookies && req.cookies.token) {
+      token = req.cookies.token;
+    }
     
     if (!token) {
       return res.status(401).json({ 
         status: 'fail',
-        message: 'Authentication required. Token missing.' 
+        message: 'Authentication required. No token provided.' 
       });
     }
     

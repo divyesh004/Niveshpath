@@ -1,60 +1,66 @@
-# NiveshPath बैकएंड ऑप्टिमाइज़ेशन
+NiveshPath Backend Optimization
+Changes Made
+To optimize the NiveshPath backend, the following changes were implemented:
 
-## किए गए परिवर्तन
+1. Caching Mechanism
+A new service cache.service.js has been added for in-memory caching.
 
-NiveshPath बैकएंड को ऑप्टिमाइज़ करने के लिए निम्नलिखित परिवर्तन किए गए हैं:
+Two cache instances have been created:
 
-### 1. कैशिंग मैकेनिज्म
+chatbotCache: For chatbot responses (30-minute TTL)
 
-- `cache.service.js` सर्विस जोड़ी गई है जो इन-मेमोरी कैशिंग प्रदान करती है
-- दो कैश इंस्टेंस बनाए गए हैं:
-  - `chatbotCache`: चैटबॉट रिस्पॉन्स के लिए (30 मिनट TTL)
-  - `userProfileCache`: यूजर प्रोफाइल के लिए (1 घंटा TTL)
-- सामान्य प्रश्नों के लिए कैशिंग जोड़ी गई है
-- कन्वर्सेशन कॉन्टेक्स्ट के लिए कैशिंग जोड़ी गई है
+userProfileCache: For user profiles (1-hour TTL)
 
-### 2. डेटाबेस क्वेरी ऑप्टिमाइज़ेशन
+Caching has been added for frequently asked questions.
 
-- MongoDB कनेक्शन सेटिंग्स को ऑप्टिमाइज़ किया गया है
-- `lean()` का उपयोग करके क्वेरी प्रदर्शन में सुधार किया गया है
-- पेजिनेशन क्वेरी को ऑप्टिमाइज़ किया गया है
-- अनावश्यक `countDocuments` कॉल को कम किया गया है
+Caching added for conversation context.
 
-### 3. रिस्पॉन्स कंप्रेशन
+2. Database Query Optimization
+MongoDB connection settings have been optimized.
 
-- `compression` मिडलवेयर जोड़ा गया है
-- सभी API रिस्पॉन्स के लिए कंप्रेशन लागू की गई है
-- चैटबॉट राउट्स के लिए विशेष रूप से कंप्रेशन लागू की गई है
+Usage of lean() to improve query performance.
 
-### 4. प्रदर्शन मॉनिटरिंग
+Pagination queries optimized.
 
-- रिस्पॉन्स टाइम ट्रैकिंग मिडलवेयर जोड़ा गया है
-- धीमे रिस्पॉन्स (500ms से अधिक) के लिए लॉगिंग जोड़ी गई है
-- `X-Response-Time` हेडर जोड़ा गया है
+Reduced unnecessary countDocuments calls.
 
-### 5. सुरक्षा सुधार
+3. Response Compression
+compression middleware has been added.
 
-- सुरक्षा हेडर्स जोड़े गए हैं
-- JSON बॉडी साइज़ लिमिट लागू की गई है
+Compression applied to all API responses.
 
-## प्रदर्शन लाभ
+Special compression applied to chatbot routes.
 
-- कैशिंग के कारण डेटाबेस क्वेरी में कमी
-- कंप्रेशन के कारण नेटवर्क बैंडविड्थ में कमी
-- ऑप्टिमाइज़्ड MongoDB कनेक्शन के कारण बेहतर स्केलेबिलिटी
-- सामान्य प्रश्नों के लिए तत्काल प्रतिक्रिया
+4. Performance Monitoring
+Response time tracking middleware added.
 
-## भविष्य के सुधार
+Logging added for slow responses (more than 500ms).
 
-- Redis कैशिंग को लागू करना (वर्तमान में कमेंट किया गया है)
-- क्वेरी परिणामों के लिए इंडेक्सिंग को और अधिक ऑप्टिमाइज़ करना
-- प्रदर्शन मेट्रिक्स के लिए मॉनिटरिंग सिस्टम जोड़ना
+X-Response-Time header added.
 
-## उपयोग
+5. Security Enhancements
+Security headers implemented.
 
-कोई अतिरिक्त कॉन्फ़िगरेशन की आवश्यकता नहीं है। ऑप्टिमाइज़ेशन स्वचालित रूप से लागू होंगे।
+JSON body size limit enforced.
 
-```bash
-npm install   # नई डिपेंडेंसी इंस्टॉल करने के लिए
-npm run dev   # डेवलपमेंट सर्वर शुरू करने के लिए
-```
+Performance Benefits
+Reduced database queries due to caching.
+
+Reduced network bandwidth usage due to compression.
+
+Improved scalability from optimized MongoDB connection.
+
+Instant response for frequently asked queries.
+
+Future Improvements
+Implement Redis caching (currently commented out).
+
+Further optimize indexing for query results.
+
+Add monitoring system for performance metrics.
+
+Usage
+No additional configuration is required. All optimizations are applied automatically.
+
+npm install   # To install new dependencies
+npm run dev   # To start the development server

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
+import MobileNavigation from '../../components/MobileNavigation';
 
 // Register ChartJS components
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -46,9 +47,27 @@ const EMICalculator = ({ darkMode, setDarkMode }) => {
       return;
     }
     
-    // Apply validation limits
-    let parsedValue = parseFloat(value) || 0;
+    // Handle empty input
+    if (value === "") {
+      setFormData(prev => ({ ...prev, [name]: "" }));
+      return;
+    }
     
+    // Apply validation limits
+    let parsedValue = parseFloat(value);
+    
+    // If it's not a valid number, return
+    if (isNaN(parsedValue)) {
+      return;
+    }
+    
+    // Allow 0 values explicitly
+    if (parsedValue === 0) {
+      setFormData(prev => ({ ...prev, [name]: 0 }));
+      return;
+    }
+    
+    // Apply min/max limits for non-zero values
     if (name === 'loanAmount') {
       parsedValue = Math.min(Math.max(parsedValue, limits.loanAmount.min), limits.loanAmount.max);
     } else if (name === 'interestRate') {
@@ -68,6 +87,17 @@ const EMICalculator = ({ darkMode, setDarkMode }) => {
   // Calculate EMI and other details
   useEffect(() => {
     const { loanAmount, interestRate, loanTenure, tenureType } = formData;
+    
+    // Check if any input is 0 and skip calculations
+    if (loanAmount === 0 || interestRate === 0 || loanTenure === 0) {
+      setResults({
+        emi: 0,
+        totalInterest: 0,
+        totalPayment: 0,
+        amortizationSchedule: []
+      });
+      return;
+    }
     
     // Convert tenure to months if in years
     const tenureInMonths = tenureType === 'years' ? loanTenure * 12 : loanTenure;
@@ -382,27 +412,36 @@ const EMICalculator = ({ darkMode, setDarkMode }) => {
                 </svg>
                 Payment Breakdown
               </h3>
-              <div className="h-80 sm:h-96 flex items-center justify-center">
-                <div className="w-full max-w-md">
-                  <Pie data={chartData} />
+              
+              {formData.loanAmount === 0 || formData.interestRate === 0 || formData.loanTenure === 0 ? (
+                <div className="p-4 text-center">
+                  <p className="text-gray-600 dark:text-gray-400">Please enter values greater than 0 to see results</p>
                 </div>
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-4">
-                <div className="text-center p-4 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Principal Amount</p>
-                  <p className="text-xl font-bold text-blue-600 dark:text-blue-400">₹{formData.loanAmount.toLocaleString('en-IN')}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-500">
-                    {Math.round((formData.loanAmount / results.totalPayment) * 100)}% of total payment
-                  </p>
-                </div>
-                <div className="text-center p-4 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Total Interest</p>
-                  <p className="text-xl font-bold text-red-600 dark:text-red-400">₹{results.totalInterest.toLocaleString('en-IN')}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-500">
-                    {Math.round((results.totalInterest / results.totalPayment) * 100)}% of total payment
-                  </p>
-                </div>
-              </div>
+              ) : (
+                <>
+                  <div className="h-80 sm:h-96 flex items-center justify-center">
+                    <div className="w-full max-w-md">
+                      <Pie data={chartData} />
+                    </div>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-4">
+                    <div className="text-center p-4 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Principal Amount</p>
+                      <p className="text-xl font-bold text-blue-600 dark:text-blue-400">₹{formData.loanAmount.toLocaleString('en-IN')}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-500">
+                        {Math.round((formData.loanAmount / results.totalPayment) * 100)}% of total payment
+                      </p>
+                    </div>
+                    <div className="text-center p-4 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Total Interest</p>
+                      <p className="text-xl font-bold text-red-600 dark:text-red-400">₹{results.totalInterest.toLocaleString('en-IN')}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-500">
+                        {Math.round((results.totalInterest / results.totalPayment) * 100)}% of total payment
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
             
             {/* Table */}
@@ -414,62 +453,43 @@ const EMICalculator = ({ darkMode, setDarkMode }) => {
                 Amortization Schedule
               </h3>
               
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead>
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Year</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">EMI</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Principal</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Interest</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Balance</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {results.amortizationSchedule.map((entry) => (
-                      <tr key={entry.month}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{entry.year}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">₹{entry.emi.toLocaleString('en-IN')}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 dark:text-blue-400">₹{entry.principal.toLocaleString('en-IN')}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 dark:text-red-400">₹{entry.interest.toLocaleString('en-IN')}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-secondary">₹{entry.balance.toLocaleString('en-IN')}</td>
+              {formData.loanAmount === 0 || formData.interestRate === 0 || formData.loanTenure === 0 ? (
+                <div className="p-4 text-center">
+                  <p className="text-gray-600 dark:text-gray-400">Please enter values greater than 0 to see results</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead>
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Year</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">EMI</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Principal</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Interest</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Balance</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {results.amortizationSchedule.map((entry) => (
+                        <tr key={entry.month}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{entry.year}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">₹{entry.emi.toLocaleString('en-IN')}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 dark:text-blue-400">₹{entry.principal.toLocaleString('en-IN')}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 dark:text-red-400">₹{entry.interest.toLocaleString('en-IN')}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-secondary">₹{entry.balance.toLocaleString('en-IN')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </main>
       
       {/* Mobile Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-primary shadow-lg border-t border-gray-200 dark:border-gray-800 py-2 px-4 flex justify-around items-center z-20">
-        <Link to="/dashboard" className="mobile-nav-item">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-          </svg>
-          <span>Dashboard</span>
-        </Link>
-        <Link to="/tools/sip-calculator" className="mobile-nav-item">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>SIP</span>
-        </Link>
-        <Link to="/tools/budget-planner" className="mobile-nav-item">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-          </svg>
-          <span>Budget</span>
-        </Link>
-        <Link to="/profile" className="mobile-nav-item">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
-          <span>Profile</span>
-        </Link>
-      </div>
+      <MobileNavigation />
     </div>
   );
 };

@@ -64,7 +64,7 @@ const Footer = () => {
         {/* Copyright */}
         <div className="border-t border-gray-200 dark:border-gray-700 mt-8 pt-6 text-center">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            &copy; {currentYear} Powered By Deepnex. All Rights Reserved.
+            &copy; {currentYear} NiveshPath. All Rights Reserved.
           </p>
         </div>
       </div>

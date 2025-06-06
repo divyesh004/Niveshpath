@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import MobileNavigation from '../../components/MobileNavigation';
 
 // Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -63,6 +64,17 @@ const SIPCalculator = ({ darkMode, setDarkMode }) => {
     const mi = parseAndClamp(formData.monthlyInvestment, 500, 1000000, 500);
     const er = parseAndClamp(formData.expectedReturnRate, 1, 30, 1);
     const tp = parseAndClamp(formData.timePeriod, 1, 40, 1);
+    
+    // Check if any input is 0 and skip calculations
+    if (formData.monthlyInvestment === 0 || formData.expectedReturnRate === 0 || formData.timePeriod === 0) {
+      setResults({
+        totalInvestment: 0,
+        estimatedReturns: 0,
+        totalValue: 0,
+        yearlyData: []
+      });
+      return;
+    }
     
     // Monthly rate
     const monthlyRate = er / 12 / 100;
@@ -404,43 +416,49 @@ const SIPCalculator = ({ darkMode, setDarkMode }) => {
                 Results Summary
               </h3>
               
-              <div className="space-y-4 sm:space-y-5">
-                <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+              {formData.monthlyInvestment === 0 || formData.expectedReturnRate === 0 || formData.timePeriod === 0 ? (
+                <div className="text-center py-6">
+                  <p className="text-gray-500 dark:text-gray-400">Please enter values greater than 0 to see results</p>
+                </div>
+              ) : (
+                <div className="space-y-4 sm:space-y-5">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Investment</p>
+                      <p className="text-xl sm:text-2xl font-bold text-primary dark:text-white">₹{results.totalInvestment.toLocaleString('en-IN')}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Investment</p>
-                    <p className="text-xl sm:text-2xl font-bold text-primary dark:text-white">₹{results.totalInvestment.toLocaleString('en-IN')}</p>
+                  
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Estimated Returns</p>
+                      <p className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">₹{results.estimatedReturns.toLocaleString('en-IN')}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 rounded-full bg-secondary/20 dark:bg-secondary/30 flex items-center justify-center mb-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Estimated Value</p>
+                      <p className="text-2xl sm:text-3xl font-bold text-secondary">₹{results.totalValue.toLocaleString('en-IN')}</p>
+                    </div>
                   </div>
                 </div>
-                
-                <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Estimated Returns</p>
-                    <p className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">₹{results.estimatedReturns.toLocaleString('en-IN')}</p>
-                  </div>
-                </div>
-                
-                <div className="pt-4 sm:pt-5 mt-2 border-t border-gray-200 dark:border-gray-700 flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-secondary/20 dark:bg-secondary/30 flex items-center justify-center mr-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Estimated Value</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-secondary">₹{results.totalValue.toLocaleString('en-IN')}</p>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           </div>
           
@@ -454,48 +472,56 @@ const SIPCalculator = ({ darkMode, setDarkMode }) => {
                 Your SIP Results
               </h3>
               
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-5 mb-4 sm:mb-8">
-                <div className="bg-white dark:bg-gray-900 p-3 sm:p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-300">
-                  <div className="flex flex-col items-center">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Total Investment</p>
-                    <p className="text-base sm:text-2xl font-bold text-primary dark:text-white">₹{results.totalInvestment.toLocaleString('en-IN')}</p>
-                  </div>
+              {formData.monthlyInvestment === 0 || formData.expectedReturnRate === 0 || formData.timePeriod === 0 ? (
+                <div className="p-4 text-center">
+                  <p className="text-gray-600 dark:text-gray-400">Please enter values greater than 0 to see results</p>
                 </div>
-                
-                <div className="bg-white dark:bg-gray-900 p-3 sm:p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-300">
-                  <div className="flex flex-col items-center">
-                    <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                      </svg>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-5 mb-4 sm:mb-8">
+                    <div className="bg-white dark:bg-gray-900 p-3 sm:p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-300">
+                      <div className="flex flex-col items-center">
+                        <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-2">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Total Investment</p>
+                        <p className="text-base sm:text-2xl font-bold text-primary dark:text-white">₹{results.totalInvestment.toLocaleString('en-IN')}</p>
+                      </div>
                     </div>
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Estimated Returns</p>
-                    <p className="text-base sm:text-2xl font-bold text-green-600 dark:text-green-400">₹{results.estimatedReturns.toLocaleString('en-IN')}</p>
-                  </div>
-                </div>
-                
-                <div className="bg-white dark:bg-gray-900 p-3 sm:p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-300">
-                  <div className="flex flex-col items-center">
-                    <div className="w-10 h-10 rounded-full bg-secondary/20 dark:bg-secondary/30 flex items-center justify-center mb-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
+                    
+                    <div className="bg-white dark:bg-gray-900 p-3 sm:p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-300">
+                      <div className="flex flex-col items-center">
+                        <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-2">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                          </svg>
+                        </div>
+                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Estimated Returns</p>
+                        <p className="text-base sm:text-2xl font-bold text-green-600 dark:text-green-400">₹{results.estimatedReturns.toLocaleString('en-IN')}</p>
+                      </div>
                     </div>
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Total Value</p>
-                    <p className="text-base sm:text-2xl font-bold text-secondary">₹{results.totalValue.toLocaleString('en-IN')}</p>
+                    
+                    <div className="bg-white dark:bg-gray-900 p-3 sm:p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-300">
+                      <div className="flex flex-col items-center">
+                        <div className="w-10 h-10 rounded-full bg-secondary/20 dark:bg-secondary/30 flex items-center justify-center mb-2">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Total Value</p>
+                        <p className="text-base sm:text-2xl font-bold text-secondary">₹{results.totalValue.toLocaleString('en-IN')}</p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-              
-              {/* Chart */}
-              <div className="h-64 sm:h-80 md:h-96 lg:h-[450px] p-2 sm:p-4 bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
-                <Line data={chartData} options={chartOptions} />
-              </div>
+                  
+                  {/* Chart */}
+                  <div className="h-64 sm:h-80 md:h-96 lg:h-[450px] p-2 sm:p-4 bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
+                    <Line data={chartData} options={chartOptions} />
+                  </div>
+                </>
+              )}
             </div>
             
             {/* Yearly Breakdown */}
@@ -507,66 +533,47 @@ const SIPCalculator = ({ darkMode, setDarkMode }) => {
                 Year-by-Year Breakdown
               </h3>
               
-              <div className="overflow-x-auto -mx-3 sm:mx-0 rounded-lg">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 border-collapse">
-                  <thead className="bg-gray-50 dark:bg-gray-800">
-                    <tr>
-                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider rounded-tl-lg">Year</th>
-                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Investment</th>
-                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Interest</th>
-                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider rounded-tr-lg">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                    {results.yearlyData.map((data, index) => (
-                      <tr key={index} className={index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-150'}>
-                        <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-gray-100 font-medium">Year {data.year}</td>
-                        <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-gray-100">₹{data.investment.toLocaleString('en-IN')}</td>
-                        <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm text-green-600 dark:text-green-400">₹{data.returns.toLocaleString('en-IN')}</td>
-                        <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm font-medium text-secondary">₹{data.totalValue.toLocaleString('en-IN')}</td>
+              {formData.monthlyInvestment === 0 || formData.expectedReturnRate === 0 || formData.timePeriod === 0 ? (
+                <div className="p-4 text-center">
+                  <p className="text-gray-600 dark:text-gray-400">Please enter values greater than 0 to see results</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto -mx-3 sm:mx-0 rounded-lg">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 border-collapse">
+                    <thead className="bg-gray-50 dark:bg-gray-800">
+                      <tr>
+                        <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider rounded-tl-lg">Year</th>
+                        <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Investment</th>
+                        <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Interest</th>
+                        <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider rounded-tr-lg">Total</th>
                       </tr>
-                    ))}
-                    <tr className="bg-gray-50 dark:bg-gray-800 border-t-2 border-gray-200 dark:border-gray-700">
-                      <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm font-bold text-gray-900 dark:text-white rounded-bl-lg">Final</td>
-                      <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm font-bold text-gray-900 dark:text-white">₹{results.totalInvestment.toLocaleString('en-IN')}</td>
-                      <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm font-bold text-green-600 dark:text-green-400">₹{results.estimatedReturns.toLocaleString('en-IN')}</td>
-                      <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm font-bold text-secondary rounded-br-lg">₹{results.totalValue.toLocaleString('en-IN')}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                      {results.yearlyData.map((data, index) => (
+                        <tr key={index} className={index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-150'}>
+                          <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-gray-100 font-medium">Year {data.year}</td>
+                          <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-gray-100">₹{data.investment.toLocaleString('en-IN')}</td>
+                          <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm text-green-600 dark:text-green-400">₹{data.returns.toLocaleString('en-IN')}</td>
+                          <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm font-medium text-secondary">₹{data.totalValue.toLocaleString('en-IN')}</td>
+                        </tr>
+                      ))}
+                      <tr className="bg-gray-50 dark:bg-gray-800 border-t-2 border-gray-200 dark:border-gray-700">
+                        <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm font-bold text-gray-900 dark:text-white rounded-bl-lg">Final</td>
+                        <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm font-bold text-gray-900 dark:text-white">₹{results.totalInvestment.toLocaleString('en-IN')}</td>
+                        <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm font-bold text-green-600 dark:text-green-400">₹{results.estimatedReturns.toLocaleString('en-IN')}</td>
+                        <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm font-bold text-secondary rounded-br-lg">₹{results.totalValue.toLocaleString('en-IN')}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </main>
       
       {/* Mobile Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-primary shadow-lg border-t border-gray-200 dark:border-gray-800 py-2 px-4 flex justify-around items-center z-20">
-        <Link to="/dashboard" className="mobile-nav-item">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-          </svg>
-          <span>Dashboard</span>
-        </Link>
-        <Link to="/tools/emi-calculator" className="mobile-nav-item">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-          </svg>
-          <span>EMI</span>
-        </Link>
-        <Link to="/tools/budget-planner" className="mobile-nav-item">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-          </svg>
-          <span>Budget</span>
-        </Link>
-        <Link to="/profile" className="mobile-nav-item">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
-          <span>Profile</span>
-        </Link>
-      </div>
+      <MobileNavigation />
     </div>
   );
 };

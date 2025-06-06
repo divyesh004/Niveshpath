@@ -28,7 +28,8 @@ export default {
         'dark-bg': '#121212',
         'dark-text': '#E0E0E0',
         'dark-input': '#1E1E1E',
-        'dark-sidebar': '#0A0A0A'
+        'dark-sidebar': '#0A0A0A',
+        'gray-850': '#1E1E1E', /* Added for form backgrounds in dark mode */
       },
       fontFamily: {
         /* Professional Fonts */

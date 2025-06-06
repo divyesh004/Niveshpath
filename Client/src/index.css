@@ -1,21 +1,29 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 /* Import form specific styles */
 @import './styles/form.css';
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
   /* Base Font Settings */
   html {
     font-family: 'Inter', 'Nunito', 'Arial', sans-serif;
     scroll-behavior: smooth;
+    /* Enhanced smooth scrolling */
+    scroll-padding-top: 80px; /* Adjust for fixed headers */
+    -webkit-overflow-scrolling: touch; /* For better mobile scrolling */
+  }
+  
+  /* Smooth scrolling for all elements */
+  * {
+    scroll-margin-top: 80px; /* For scroll-to-anchor targets */
   }
   
   /* Body Styles */
   body {
     @apply bg-background dark:bg-gray-900 text-text dark:text-dark-text transition-colors duration-300;
+    overflow-y: scroll; /* Always show scrollbar to prevent layout shifts */
   }
   
   /* Modern & Youthful Theme (Current) */
@@ -124,8 +132,17 @@
   }
   
   .app-header {
-  @apply bg-white dark:bg-gray-900 shadow-md sticky top-0 z-10 transition-colors duration-300;
-}
+    @apply bg-white dark:bg-gray-900 shadow-md sticky top-0 z-10 transition-colors duration-300;
+  }
+  
+  /* Page Container and Content Container */
+  .page-container {
+    @apply w-full min-h-screen flex flex-col bg-background dark:bg-gray-900;
+  }
+  
+  .content-container {
+    @apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 flex-grow;
+  }
 }
 
 /* Dark mode styles */
@@ -140,107 +157,3 @@
 .dark-mode .input-field {
     @apply bg-dark-input border-gray-700 text-dark-text;
   }
-
-/* Input field states */
-.input-field:hover {
-  @apply border-gray-400 dark:border-gray-600 shadow-md;
-}
-
-.input-field:disabled {
-  @apply bg-gray-100 dark:bg-gray-800 cursor-not-allowed opacity-70;
-}
-
-/* Form group spacing */
-.form-group {
-  @apply mb-4;
-}
-
-/* Hover effects */
-.card:hover {
-  @apply shadow-lg transform transition-all duration-300;
-}
-
-/* Form elements */
-input[type="range"] {
-  @apply accent-secondary dark:accent-secondary h-2 rounded-lg appearance-none bg-gray-200 dark:bg-gray-700;
-}
-
-input[type="checkbox"], input[type="radio"] {
-  @apply h-4 w-4 text-secondary focus:ring-accent border-gray-300 dark:border-gray-600 rounded transition-colors duration-200;
-}
-
-select.input-field {
-  @apply appearance-none bg-no-repeat bg-right pr-10;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23666666'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-  background-size: 1.5em 1.5em;
-}
-
-/* Layout utilities */
-.page-container {
-  @apply min-h-screen bg-background dark:bg-gray-900 transition-colors duration-300;
-}
-
-.content-container {
-  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8;
-}
-
-.section-title {
-  @apply text-3xl font-bold text-primary dark:text-white mb-2;
-}
-
-.section-description {
-  @apply text-gray-600 dark:text-gray-400 mt-2 mb-6;
-}
-
-/* Responsive utilities */
-.responsive-grid {
-  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6;
-}
-
-/* Mobile responsive adjustments */
-@media (max-width: 640px) {
-  .section-title {
-    @apply text-2xl;
-  }
-  
-  .card {
-    @apply p-4;
-  }
-  
-  .content-container {
-    @apply py-4 px-3;
-  }
-  
-  .app-header {
-    @apply px-2;
-  }
-}
-
-/* Improved spacing for small devices */
-.space-mobile {
-  @apply px-2 sm:px-4;
-}
-
-/* Responsive text adjustments */
-.text-responsive {
-  @apply text-sm sm:text-base;
-}
-
-/* Responsive navigation */
-.mobile-nav {
-  @apply fixed bottom-0 left-0 right-0 bg-white dark:bg-primary shadow-lg border-t border-gray-200 dark:border-gray-800 py-2 px-4 flex justify-around items-center z-20;
-}
-
-.mobile-nav-item {
-  @apply flex flex-col items-center text-xs text-gray-600 dark:text-gray-400 hover:text-secondary dark:hover:text-accent;
-}
-
-/* Animation utilities */
-.fade-in {
-  @apply transition-opacity duration-300 ease-in-out;
-}
-
-/* Theme toggle button */
-.theme-toggle-btn {
-  @apply p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-opacity-50;
-}

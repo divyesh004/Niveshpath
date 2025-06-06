@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const morgan = require('morgan');
 const compression = require('compression');
+const cookieParser = require('cookie-parser');
 const dotenv = require('dotenv');
 const path = require('path');
 
@@ -26,10 +27,15 @@ const app = express();
 
 // Apply middleware
 app.use(cors({
-  origin: 'https://niveshpath.deepnex.in', // 👈 Allow frontend domain
-  credentials: true // 👈 Agar cookies ya auth token use ho raha hai
+  origin: process.env.NODE_ENV === 'production' 
+    ? 'https://niveshpath.vercel.app' 
+    : 'http://localhost:3000',
+  credentials: true, // Allow credentials (cookies)
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(compression()); // Add compression for all responses
+app.use(cookieParser()); // Parse cookies
 app.use(express.json({ limit: '1mb' })); // Limit JSON body size
 app.use(express.urlencoded({ extended: true, limit: '1mb' })); // Parse URL-encoded bodies
 

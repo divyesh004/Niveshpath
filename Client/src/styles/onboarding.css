@@ -1,4 +1,5 @@
 /* Onboarding Styles - Duolingo Inspired */
+
 /* Container animations */
 .onboarding-container {
   position: relative;
@@ -184,45 +185,62 @@
 }
 
 .text-primary-pro {
-  color: #1e40af;
+  color: #0A2647;
 }
 
 .text-text-pro {
-  color: #475569;
+  color: #333333;
 }
 
 .bg-secondary-pro {
-  background-color: #58cc02;
+  background-color: #2AB3A6;
 }
 
 .bg-accent-pro {
-  background-color: #46a302;
+  background-color: #FF9843;
 }
 
 .text-secondary-pro {
-  color: #58cc02;
+  color: #2AB3A6;
 }
 
 .text-accent-pro {
-  color: #ff9600;
+  color: #FF9843;
 }
 
 .border-accent-pro {
-  border-color: #58cc02;
+  border-color: #2AB3A6;
 }
 
 .focus\:ring-secondary-pro:focus {
-  --tw-ring-color: #58cc02;
+  --tw-ring-color: #2AB3A6;
   --tw-ring-opacity: 0.5;
 }
 
 /* Dark mode overrides */
 .dark .bg-background-pro {
-  background-color: #1e293b;
+  background-color: #1E2A38;
 }
 
 .dark .text-text-pro {
-  color: #cbd5e1;
+  color: #E0E0E0;
+}
+
+.dark .text-secondary-pro {
+  color: #2AB3A6;
+}
+
+.dark .text-accent-pro {
+  color: #FF9843;
+}
+
+.dark .border-accent-pro {
+  border-color: #2AB3A6;
+}
+
+.dark .focus\:ring-secondary-pro:focus {
+  --tw-ring-color: #2AB3A6;
+  --tw-ring-opacity: 0.7;
 }
 
 /* Form animations */
@@ -276,21 +294,25 @@ button:not(:disabled):hover {
 
 /* Checkbox animations */
 input[type="checkbox"]:checked + label {
-  color: #58cc02;
+  color: #2AB3A6;
   font-weight: 500;
   transition: all 0.2s ease;
+}
+
+.dark input[type="checkbox"]:checked + label {
+  color: #2AB3A6;
 }
 
 /* Dark mode adjustments */
 /* Using .dark class from Tailwind for explicit dark mode */
 .dark .character-speech-bubble {
-  background-color: #374151; /* Tailwind gray-700 */
-  border-color: #4b5563; /* Tailwind gray-600 */
-  color: #f3f4f6; /* Tailwind gray-100 */
+  background-color: #1E2A38; /* primary-pro color */
+  border-color: #2AB3A6; /* secondary-pro color */
+  color: #E0E0E0; /* dark-text color */
 }
 
 .dark .character-speech-bubble:after {
-  border-top-color: #374151; /* Match dark background */
+  border-top-color: #1E2A38; /* Match dark background */
 }
 
 /* Custom checkbox/radio styling - Add base styles if not fully covered by Tailwind in JSX */
@@ -298,13 +320,33 @@ input[type="checkbox"]:checked + label {
 .custom-radio input[type="radio"]:focus + .icon {
   outline: 2px solid transparent;
   outline-offset: 2px;
-  --tw-ring-color: var(--secondary-pro);
+  --tw-ring-color: #2AB3A6;
   box-shadow: 0 0 0 2px var(--tw-ring-color);
 }
 
 .dark .custom-checkbox input[type="checkbox"]:focus + .icon,
 .dark .custom-radio input[type="radio"]:focus + .icon {
-  --tw-ring-color: var(--secondary-pro-dark);
+  --tw-ring-color: #2AB3A6;
+}
+
+/* Input field dark mode styling */
+.dark input[type="text"],
+.dark input[type="number"],
+.dark input[type="email"],
+.dark select,
+.dark textarea {
+  background-color: #2A3A4A;
+  border-color: #3A4A5A;
+  color: #E0E0E0;
+}
+
+.dark input[type="text"]:focus,
+.dark input[type="number"]:focus,
+.dark input[type="email"]:focus,
+.dark select:focus,
+.dark textarea:focus {
+  border-color: #2AB3A6;
+  --tw-ring-color: #2AB3A6;
 }
 
 /* Responsive adjustments */

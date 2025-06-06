@@ -23,18 +23,12 @@ const OnboardingChatbot = () => {
           return;
         }
         
-        // Check localStorage as backup
-        const onboardingStatus = localStorage.getItem('onboardingCompleted');
-        if (onboardingStatus === 'true') {
-          // User has already completed onboarding, redirect to dashboard
-          navigate('/dashboard');
-          return;
-        }
+        // Don't check localStorage as backup
         
-        // Try to get status from API as final backup
+        // Try to get status from API
         try {
           const response = await apiService.onboarding.getOnboardingStatus();
-          if (response.data && response.data.completed) {
+          if (response && response.isOnboardingCompleted) {
             // User has already completed onboarding, redirect to dashboard
             navigate('/dashboard');
             // Update local state

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
+import MobileNavigation from '../../components/MobileNavigation';
 
 // Register ChartJS components
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -28,6 +29,16 @@ const BudgetPlanner = ({ darkMode, setDarkMode }) => {
 
   // Calculate summary whenever income or expenses change
   useEffect(() => {
+    // Check if income is 0 and set appropriate values
+    if (income === 0) {
+      setSummary({
+        totalExpenses: 0,
+        balance: 0,
+        savingsRate: 0
+      });
+      return;
+    }
+    
     const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
     const balance = income - totalExpenses;
     const savingsRate = income > 0 ? (balance / income) * 100 : 0;
@@ -132,7 +143,25 @@ const BudgetPlanner = ({ darkMode, setDarkMode }) => {
   // Handle income change
   const handleIncomeChange = (e) => {
     const { value, min, max } = e.target;
-    let parsedValue = parseFloat(value) || 0;
+    
+    // Handle empty input
+    if (value === "") {
+      setIncome("");
+      return;
+    }
+    
+    let parsedValue = parseFloat(value);
+    
+    // If not a valid number, return
+    if (isNaN(parsedValue)) {
+      return;
+    }
+    
+    // Allow 0 explicitly
+    if (parsedValue === 0) {
+      setIncome(0);
+      return;
+    }
 
     const minValue = parseFloat(min);
     const maxValue = parseFloat(max);
@@ -320,48 +349,54 @@ const BudgetPlanner = ({ darkMode, setDarkMode }) => {
                 Budget Summary
               </h3>
               
-              <div className="space-y-4 sm:space-y-5">
-                <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+              {income === 0 ? (
+                <div className="p-4 text-center">
+                  <p className="text-gray-600 dark:text-gray-400">Please enter income greater than 0 to see results</p>
+                </div>
+              ) : (
+                <div className="space-y-4 sm:space-y-5">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Income</p>
+                      <p className="text-xl sm:text-2xl font-bold text-primary dark:text-white">₹{income.toLocaleString('en-IN')}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Income</p>
-                    <p className="text-xl sm:text-2xl font-bold text-primary dark:text-white">₹{income.toLocaleString('en-IN')}</p>
+                  
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mr-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Expenses</p>
+                      <p className="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400">₹{summary.totalExpenses.toLocaleString('en-IN')}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-4 sm:pt-5 mt-2 border-t border-gray-200 dark:border-gray-700 flex items-center">
+                    <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Balance (Savings)</p>
+                      <p className={`text-2xl sm:text-3xl font-bold ${summary.balance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        ₹{summary.balance.toLocaleString('en-IN')}
+                      </p>
+                      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Savings Rate: {summary.savingsRate.toFixed(1)}%
+                      </p>
+                    </div>
                   </div>
                 </div>
-                
-                <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mr-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Expenses</p>
-                    <p className="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400">₹{summary.totalExpenses.toLocaleString('en-IN')}</p>
-                  </div>
-                </div>
-                
-                <div className="pt-4 sm:pt-5 mt-2 border-t border-gray-200 dark:border-gray-700 flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Balance (Savings)</p>
-                    <p className={`text-2xl sm:text-3xl font-bold ${summary.balance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                      ₹{summary.balance.toLocaleString('en-IN')}
-                    </p>
-                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      Savings Rate: {summary.savingsRate.toFixed(1)}%
-                    </p>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           </div>
           
@@ -377,7 +412,11 @@ const BudgetPlanner = ({ darkMode, setDarkMode }) => {
                 Expense Breakdown
               </h3>
               
-              {expenses.length > 0 ? (
+              {income === 0 ? (
+                <div className="p-4 text-center">
+                  <p className="text-gray-600 dark:text-gray-400">Please enter income greater than 0 to see results</p>
+                </div>
+              ) : expenses.length > 0 ? (
                 <div className="h-80 sm:h-96 flex items-center justify-center">
                   <div className="w-full max-w-md">
                     <Doughnut data={chartData} options={chartOptions} />
@@ -399,7 +438,11 @@ const BudgetPlanner = ({ darkMode, setDarkMode }) => {
                 Expense List
               </h3>
               
-              {expenses.length > 0 ? (
+              {income === 0 ? (
+                <div className="p-4 text-center">
+                  <p className="text-gray-600 dark:text-gray-400">Please enter income greater than 0 to see results</p>
+                </div>
+              ) : expenses.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead>
@@ -471,32 +514,7 @@ const BudgetPlanner = ({ darkMode, setDarkMode }) => {
       </main>
       
       {/* Mobile Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-primary shadow-lg border-t border-gray-200 dark:border-gray-800 py-2 px-4 flex justify-around items-center z-20">
-        <Link to="/dashboard" className="mobile-nav-item">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-          </svg>
-          <span>Dashboard</span>
-        </Link>
-        <Link to="/tools/sip-calculator" className="mobile-nav-item">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>SIP</span>
-        </Link>
-        <Link to="/tools/emi-calculator" className="mobile-nav-item">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-          </svg>
-          <span>EMI</span>
-        </Link>
-        <Link to="/profile" className="mobile-nav-item">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
-          <span>Profile</span>
-        </Link>
-      </div>
+      <MobileNavigation />
     </div>
   );
 };
