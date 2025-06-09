@@ -362,6 +362,8 @@ const Dashboard = ({ darkMode, setDarkMode }) => {
         {/* Currency Rates */}
         <CurrencyRates />
         
+        {/* Precious Metals section removed */}
+        
         {/* Financial Tools */}
         <div className="mb-6 sm:mb-10">
           <h3 className="text-lg sm:text-xl font-semibold text-primary dark:text-white mb-3 sm:mb-5 flex items-center">

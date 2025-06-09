@@ -254,11 +254,8 @@ const Profile = ({ darkMode, setDarkMode }) => {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login');
-        return;
-      }
+      // No need to check for token in localStorage as we're using HttpOnly cookies
+      // and authentication is handled by the API automatically
 
       // Ensure data is properly synchronized before submission
       const updatedFormData = {
@@ -336,9 +333,10 @@ const Profile = ({ darkMode, setDarkMode }) => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    toast.success('You have been successfully logged out!');
-    navigate('/login');
+    // Use the logout function from AuthContext instead of manually removing token
+    const { logout } = useAuth();
+    logout();
+    // Navigation will be handled by the logout function
   };
 
   const handleSaveProfile = (e) => {

@@ -20,6 +20,7 @@ export const ENABLE_ANALYTICS = import.meta.env.VITE_ENABLE_ANALYTICS === 'true'
 export const CURRENCY_API_ENABLED = import.meta.env.VITE_CURRENCY_API_ENABLED === 'true';
 export const MARKET_DATA_ENABLED = import.meta.env.VITE_MARKET_DATA_ENABLED === 'true';
 export const RBI_NEWS_ENABLED = import.meta.env.VITE_RBI_NEWS_ENABLED === 'true';
+export const PRECIOUS_METALS_ENABLED = import.meta.env.VITE_PRECIOUS_METALS_ENABLED === 'true' || true; // Enabled by default
 
 // Default configuration object
 const config = {
