@@ -1045,6 +1045,7 @@ const formatBotMessage = (text) => {
 const Chatbot = ({ darkMode, setDarkMode }) => {
   const [sessionId, setSessionId] = useState(null); // Ensure sessionId state is here
   const [showScrollTop, setShowScrollTop] = useState(false); // State to control scroll to top button visibility
+  const inputRef = useRef(null); // Reference for the input field
 
   // Function to load a chat from history (now inside Chatbot component)
   const loadChatFromHistory = async (chat) => {
@@ -1053,7 +1054,7 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
     
     // Ensure chat object and chat.id are present before trying to load
     if (!chat || !chat.id) {
-      toast.error('Invalid chat data. Cannot load.');
+      toast.error('Invalid chat data. Cannot load.'); 
       setMessages([]);
       setShowWelcome(true);
       setSessionId(null);
@@ -1117,20 +1118,25 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
         setShowWelcome(false);
         // Then set messages
         setMessages(sortedMessages);
-        console.log('Chat loaded with messages:', sortedMessages.length);
         toast.success(`Chat loaded: ${chat.title || 'Chat'}`);
       } else {
         // If there are no messages, show the welcome message
         setShowWelcome(true);
         // Then set messages
         setMessages([]); // Set to empty array if no valid formatted messages
-        console.log('Chat loaded with empty messages array');
         toast.info('This chat session has no messages yet.');
       }
       
       // Set the session ID and save it to sessionStorage
       setSessionId(chat.id);
       sessionStorage.setItem('niveshpath_session_id', chat.id);
+      
+      // Save messages to sessionStorage
+      if (formattedMessages.length > 0) {
+        sessionStorage.setItem('niveshpath_messages', JSON.stringify(formattedMessages));
+      } else {
+        sessionStorage.removeItem('niveshpath_messages');
+      }
       
       // Clear input field and any errors
       setInput('');
@@ -1181,6 +1187,13 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
   const [showHistory, setShowHistory] = useState(true);
   const [newChat, setNewChat] = useState(false);
   const messagesEndRef = useRef(null);
+  
+  // Auto-focus the input field when the component mounts or refreshes
+  useEffect(() => {
+    if (inputRef.current && isAuthenticated && !isTyping && !loading) {
+      inputRef.current.focus();
+    }
+  }, [isAuthenticated, isTyping, loading]);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768); // isMobile state is fine here
 
   useEffect(() => {
@@ -1229,11 +1242,30 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
     
     checkOnboardingStatus();
     
-    // Restore session ID from sessionStorage if available
+    // Restore session ID and messages from sessionStorage if available
     const savedSessionId = sessionStorage.getItem('niveshpath_session_id');
+    const savedMessages = sessionStorage.getItem('niveshpath_messages');
+    
     if (savedSessionId) {
       setSessionId(savedSessionId);
-      setShowWelcome(false); // Don't show welcome message if we have a session
+      
+      // If we have saved messages, restore them
+      if (savedMessages) {
+        try {
+          const parsedMessages = JSON.parse(savedMessages);
+          if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
+            setMessages(parsedMessages);
+            setShowWelcome(false); // Don't show welcome message if we have messages
+          }
+        } catch (error) {
+          console.error('Error parsing saved messages:', error);
+          // If there's an error parsing messages, clear the saved messages
+          sessionStorage.removeItem('niveshpath_messages');
+          setShowWelcome(true);
+        }
+      } else {
+        setShowWelcome(false); // Don't show welcome message if we have a session
+      }
     } else {
       // Show welcome message only for new sessions
       setShowWelcome(true);
@@ -1241,12 +1273,17 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
     
   }, [currentUser, isAuthenticated, navigate, onboardingCompleted]);
   
-  // Save sessionId to sessionStorage whenever it changes
+  // Save sessionId and messages to sessionStorage whenever they change
   useEffect(() => {
     if (sessionId) {
       sessionStorage.setItem('niveshpath_session_id', sessionId);
+      
+      // Also save the current messages to sessionStorage
+      if (messages && messages.length > 0) {
+        sessionStorage.setItem('niveshpath_messages', JSON.stringify(messages));
+      }
     }
-  }, [sessionId]);
+  }, [sessionId, messages]);
   
   // This useEffect has been replaced with the one using sessionStorage above
   
@@ -1281,7 +1318,7 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
         sessionStorage.removeItem('niveshpath_session_id'); // Clear session ID if no user ID
         setLoading(false);
         return;
-        // console.log("Fetching general history as userId is not available. This might be empty or not supported by backend for guests.");
+        // Fetching general history as userId is not available. This might be empty or not supported by backend for guests.
         // response = await apiService.chatbot.getHistory(); // This line is now commented out based on new understanding
       }
 
@@ -1379,7 +1416,7 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
           
           if (savedChat) {
             // Load the saved chat
-            console.log('Restoring chat session from localStorage:', savedSessionId);
+            // Restoring chat session from localStorage
             
             if (savedChat.messages && savedChat.messages.length > 0) {
               setMessages(savedChat.messages);
@@ -1455,9 +1492,7 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
           }
           
           // Make sure we're using the correct sessionId for the API call
-          console.log('Deleting chat session with ID:', sessionId);
           const response = await apiService.chatbot.deleteSession(sessionId);
-          console.log('Delete session response:', response);
           
           if (response && response.message) {
             toast.success(response.message || 'Chat successfully deleted from server');
@@ -1496,17 +1531,19 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
             setMessages([]); // Fallback: clear messages
             console.warn("welcomeMessage is not defined in Chatbot.jsx. Clearing messages instead.");
           }
-          // Clear session ID if the deleted chat was the active one
+          // Clear session ID and messages from sessionStorage if the deleted chat was the active one
           setSessionId(null);
           sessionStorage.removeItem('niveshpath_session_id');
+          sessionStorage.removeItem('niveshpath_messages');
         }
       }
       
-      // If the deleted chat ID matches the current session ID, clear it
+      // If the deleted chat ID matches the current session ID, clear it and messages
       const savedSessionId = sessionStorage.getItem('niveshpath_session_id');
       if (savedSessionId === chatId) {
         setSessionId(null);
         sessionStorage.removeItem('niveshpath_session_id');
+        sessionStorage.removeItem('niveshpath_messages');
       }
       // No localStorage updates needed
     } catch (error) {
@@ -1545,9 +1582,10 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
       setMessages([]);
       setShowWelcome(true);
       
-      // Clear session ID
+      // Clear session ID and messages from sessionStorage
       setSessionId(null);
       sessionStorage.removeItem('niveshpath_session_id');
+      sessionStorage.removeItem('niveshpath_messages');
       
       // Create a default chat entry after clearing
       const defaultChat = {
@@ -1615,6 +1653,9 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
     setSessionId(newChatId.toString());
     sessionStorage.setItem('niveshpath_session_id', newChatId.toString());
     
+    // Clear saved messages from sessionStorage
+    sessionStorage.removeItem('niveshpath_messages');
+    
     // Add new chat to history with user ID
     const newChatEntry = {
       id: newChatId,
@@ -1669,6 +1710,11 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
     
     setInput(''); // Clear input after sending
     setIsTyping(true);
+    
+    // Scroll to user's message immediately
+    setTimeout(() => {
+      scrollToLatestQuestion();
+    }, 100);
     
     try {
       // Send message to backend API
@@ -1737,10 +1783,14 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
           return updated;
         });
         
-        // Scroll to the user's question after response is received
+        // Scroll to the bot's response after it's received
         setTimeout(() => {
           scrollToLatestQuestion();
-        }, 300);
+          // Additional fallback to ensure scrolling works
+          if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 300); // Adjusted timeout to ensure DOM is fully updated
       } else {
         // Fallback in case the API response format is unexpected
         throw new Error('Unexpected response format from server');
@@ -1760,32 +1810,54 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
         const updated = [...prevMessages, errorMessage];
         return updated;
       });
+      
+      // Ensure scrolling to error message
+      setTimeout(() => {
+        scrollToLatestQuestion();
+        // Additional fallback to ensure scrolling works
+        if (messagesEndRef.current) {
+          messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 300);
     } finally {
       setIsTyping(false);
     }
   };
 
-  // Function to scroll to the latest user question
+  // Function to scroll to the latest message (bot or user)
   const scrollToLatestQuestion = () => {
-    // Find the last user message
-    const userMessages = messages.filter(msg => !msg.isBot);
-    if (userMessages.length > 0) {
-      const lastUserMessage = userMessages[userMessages.length - 1];
-      const element = document.getElementById(`message-${lastUserMessage.id}`);
+    // Find the last message (bot or user)
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      const element = document.getElementById(`message-${lastMessage.id}`);
       if (element) {
-        // Scroll to the user's question but keep it in view
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Scroll to the latest message and keep it in view
+        element.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      } else {
+        // Fallback to messagesEndRef if element not found
+        if (messagesEndRef.current) {
+          messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
       }
+    } else if (messagesEndRef.current) {
+      // If no messages yet, still scroll to the end
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   };
   
-  // Auto-scroll to bottom when new messages are added, but only if user hasn't scrolled up
+  // Auto-scroll when new messages are added or typing indicator changes
   useEffect(() => {
-    // Only auto-scroll if we're adding a new bot message or when typing indicator appears/disappears
-    const lastMessage = messages[messages.length - 1];
-    if (lastMessage?.isBot || isTyping) {
-      // Scroll to the user's question instead of the bottom to keep context visible
-      scrollToLatestQuestion();
+    // Auto-scroll for any new message or when typing indicator changes
+    if (messages.length > 0 || isTyping) {
+      // Small delay to ensure DOM is updated
+      setTimeout(() => {
+        // Try to scroll to the latest message first
+        scrollToLatestQuestion();
+        // Additional fallback to ensure scrolling works
+        if (messagesEndRef.current) {
+          messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
     }
   }, [messages, isTyping]);
   
@@ -1942,7 +2014,7 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
                      </div>
                     <button 
                       onClick={(e) => deleteChat(chat.id, e)}
-                      className="opacity-0 group-hover:opacity-100 p-1.5 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 dark:text-red-400 transition-opacity focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:ring-opacity-50"
+                      className="md:opacity-0 md:group-hover:opacity-100 opacity-100 p-1.5 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 dark:text-red-400 transition-opacity focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:ring-opacity-50"
                       title="Delete Chat"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2076,10 +2148,10 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
           {/* Down arrow button to scroll to latest answer - Enhanced with animation */}
           {messages.length > 1 && (
             <button 
-              onClick={() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })}
+              onClick={scrollToLatestQuestion}
               className="fixed bottom-24 right-6 z-20 p-2.5 rounded-full bg-primary dark:bg-secondary text-white shadow-lg hover:bg-primary-dark dark:hover:bg-secondary-dark transition-all duration-300 border border-primary-light dark:border-secondary-light hover:scale-110 animate-bounce-slow focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-secondary focus:ring-opacity-50"
-              aria-label="Scroll to answer"
-              title="Scroll to see answer"
+              aria-label="Scroll to latest message"
+              title="Scroll to latest message"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
@@ -2169,15 +2241,6 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
                   {/* Message content */}
                   {message.isBot ? (
                     <div className="text-gray-800 dark:text-white text-sm sm:text-base prose prose-sm dark:prose-invert max-w-none notion-like-content">
-                      {/* Always show user's question above bot response */}
-                      {index > 0 && messages[index-1] && !messages[index-1].isBot && (
-                        <div className="text-gray-800 dark:text-white text-sm sm:text-base whitespace-pre-wrap bg-secondary/10 dark:bg-secondary/20 p-4 mb-4 rounded-lg border border-secondary/30 dark:border-secondary/40 font-medium shadow-md">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-semibold bg-secondary/20 dark:bg-secondary/30 text-secondary dark:text-secondary-light px-2 py-0.5 rounded-full">Your Question</span>
-                          </div>
-                          {messages[index-1].text}
-                        </div>
-                      )}
                       <div>
                         {formatBotMessage(message.text)}
                         {/* Copy and Share buttons below the message */}
@@ -2253,6 +2316,7 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
             {error && <div className="text-red-500 text-sm mb-2 font-medium bg-red-50 dark:bg-red-900/20 p-2 rounded-lg border border-red-100 dark:border-red-800/30">{error}</div>}
             <div className={`relative rounded-xl shadow-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 overflow-hidden hover:border-primary dark:hover:border-secondary transition-all duration-300 mx-auto max-w-3xl ml-auto mr-0 hover:shadow-lg focus-within:border-primary dark:focus-within:border-secondary focus-within:ring-2 focus-within:ring-primary/20 dark:focus-within:ring-secondary/20`}>
             <textarea
+              ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -2261,6 +2325,7 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
               disabled={isTyping || loading || !isAuthenticated}
               rows="1"
               style={{ minHeight: '56px' }}
+              autoFocus
             />
             <button
               type="submit"

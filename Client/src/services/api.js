@@ -60,6 +60,7 @@ const apiService = {
     calculateSIP: (data) => api.post('/tools/sip', data),
     calculateEMI: (data) => api.post('/tools/emi', data),
     createBudget: (data) => api.post('/tools/budget', data),
+    getPreciousMetals: () => api.get('/tools/precious-metals'),
   },
   
   // External data endpoints
@@ -89,7 +90,6 @@ chatbot: {
     // Ensure userId is a string and remove any colon prefix if present
     const formattedUserId = userId?.toString().replace(/^:/, '');
     if (!formattedUserId) {
-      console.error('Invalid userId provided to getChatHistory');
       return api.get('/chatbot/history'); // Fallback to general history
     }
     return api.get(`/chatbot/user/${formattedUserId}/history`);
@@ -98,21 +98,15 @@ chatbot: {
   deleteSession: (sessionId) => {
     // Ensure sessionId is a valid string before making the API call
     if (!sessionId || typeof sessionId !== 'string') {
-      console.error('Invalid sessionId provided to deleteSession:', sessionId);
       return Promise.reject(new Error('Invalid sessionId'));
     }
-    
-    // Log the sessionId being used for debugging
-    console.log('API call: Deleting session with ID:', sessionId);
     
     // Make the API call to delete the session
     return api.delete(`/chatbot/session/${sessionId}`)
       .then(response => {
-        console.log('Delete session API response:', response);
         return response;
       })
       .catch(error => {
-        console.error('Delete session API error:', error);
         throw error;
       });
   },

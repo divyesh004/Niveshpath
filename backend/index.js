@@ -27,10 +27,10 @@ const app = express();
 
 // Apply middleware
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? 'https://niveshpath.vercel.app' 
-    : 'http://localhost:3000',
-  credentials: true, // Allow credentials (cookies)
+  origin: ['https://niveshpath.deepnex.in',
+    'http://localhost:3000'
+  ],
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));

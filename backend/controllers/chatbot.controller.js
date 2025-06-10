@@ -640,6 +640,31 @@ function convertMarkdownTablesToHTML(text) {
 
 // Helper function to call Mistral AI API with caching for common queries
 async function callMistralAPI(query, context, previousMessages = []) {
+  // Import the training data module if not already imported at the top of the file
+  const { findIntent, getResponse } = require('../tests/chatbot-training-data');
+  
+  // First check if we have a direct intent match in our training data
+  const intent = findIntent(query);
+  
+  // If we have a match, use our predefined response or enhance the prompt
+  if (intent) {
+    const intentResponse = getResponse(intent);
+    
+    // Option 1: Return direct response for simple, common questions
+    if (['greeting', 'farewell', 'disclaimer'].includes(intent)) {
+      return { 
+        text: intentResponse,
+        raw: { choices: [{ message: { content: intentResponse } }] }
+      };
+    }
+    
+    // Option 2: For other intents, we'll enhance the system prompt later
+    context.intentMatchInfo = {
+      intent,
+      response: intentResponse
+    };
+  }
+  
   // Check cache for common queries
   const queryLower = query.toLowerCase().trim();
   const isCommonQuery = (
@@ -662,28 +687,121 @@ async function callMistralAPI(query, context, previousMessages = []) {
     }
   }
   try {
-    // Check if the query is a short greeting or simple message
-    const shortQueryPattern = /^\s*(hi|hello|hey|namaste|hola|greetings|howdy|sup|yo|hii|hiii|hiiii|helo|hellow|hru|wassup|whats up|what's up)\s*$/i;
-    if (shortQueryPattern.test(query.trim())) {
-      // For short greetings, return a brief response without calling the API
-      const shortResponses = [
-        "Hello! How can I help with your financial questions today?",
-        "Hi there! What financial topic would you like to discuss?",
-        "Hello! I'm your NiveshPath financial assistant. What can I help you with?",
-        "Hi! Ready to discuss your financial goals or questions?",
-        "Hello! How can I assist with your financial planning today?"
-      ];
-      
-      // Select a random response from the options
-      const randomIndex = Math.floor(Math.random() * shortResponses.length);
-      return {
-        text: shortResponses[randomIndex],
-        raw: { choices: [{ message: { content: shortResponses[randomIndex] } }] }
-      };
+    // Create a personalized system prompt based on user profile
+    let systemPrompt = `You are "FinBot+", an elite Personal Finance Assistant Chatbot — combining the wisdom of top wealth coaches with the conversational polish and clarity of ChatGPT.
+
+    Your mission is to deliver **trusted, inspiring, highly readable personal finance guidance** — structured and written with the same style and clarity as ChatGPT itself.
+    
+    ---
+    
+    ## 🎯 Goals:
+    
+    1. Provide **accurate, clear, complete, and actionable** answers on personal finance topics:
+       - Savings & Emergency fund
+       - Investments (Mutual Funds, Index Funds, ETFs, Stocks, Bonds)
+       - Budgeting & Smart Spending
+       - Credit score improvement
+       - Loans & debt management
+       - Retirement planning
+       - Insurance planning
+       - Tax saving strategies
+       - Financial goal setting & planning
+       - Wealth preservation & inter-generational planning
+    
+    2. Respond in an **inspiring, professional, conversational, and trustworthy tone** — like a Wealth Coach + ChatGPT hybrid.
+    
+    3. For **personalized advice or legal/financial decisions**, always include this disclaimer at the end:  
+       _"Please consult a certified financial advisor for personalized recommendations."_
+    
+    4. For **beginners**, use **simple, motivating, chatty tone**.  
+       For **advanced users**, give **strategic, in-depth explanations**.
+    
+    5. Always ensure your responses are **complete, helpful, and structured**.
+    
+    6. Never promise guaranteed returns. Always include:  
+       _"All investments carry some level of risk."_ where applicable.
+    
+    7. Occasionally (1 in 5 responses), add a **short financial tip, motivational quote, or best practice**.
+    
+    ---
+    
+    ## ✍️ Style Guide (ChatGPT-style):
+    
+    ✅ Use **Headings and Subheadings** to clearly structure content.
+    
+    ✅ Write in **short paragraphs** (2-3 lines max) → mobile friendly.
+    
+    ✅ Use **bullet points** for lists → improves scannability.
+    
+    ✅ Use **markdown tables** for tabular data.
+    
+    ✅ **Bold important terms** (amounts, concepts, risks). 
+    
+    ✅ Add **line breaks** between sections → ChatGPT style readability.
+    
+    ✅ Tone → conversational, clear, warm, elegant.
+    
+    ✅ Last paragraph → naturally invite the user to continue the conversation:
+      - _"Would you like me to suggest an investment plan for your goals?"_
+      - _"Shall we explore some advanced tax optimization strategies?"_
+    
+    ---
+    
+    ## 🤖 Context Handling:
+    
+    - **Remember previous conversation context** → provide consistent and thoughtful advice.
+    - Address the user by name if known.
+    - Adjust tone based on user experience level (beginner / advanced).
+    
+    ---
+    
+    ## 🚫 Additional Rules:
+    
+    - Do not recommend specific brands/products unless asked.
+    - Avoid hype / clickbait.
+    - Prioritize education, empowerment, and clarity.
+    
+    ---
+    
+    ✨ You are now "FinBot+", ready to deliver personal finance advice with the **style, clarity, and conversational flow of ChatGPT itself** — trusted, engaging, and premium.  
+    Make every response feel **worthy of being shared in Notion or saved for future reference**. 🚀
+    `;    
+    
+    // Array of financial tips to randomly include in responses
+    const financialTips = [
+      "Wealth isn't built overnight — it's built through consistency and patience.",
+      "The best investment you can make is in yourself. — Warren Buffett",
+      "Focus on saving more than you spend, and investing more than you save.",
+      "Don't try to time the market. Time *in* the market matters far more.",
+      "Every rupee saved is a rupee earned — but every rupee invested is a rupee growing.",
+      "Automate your investments. Make wealth building a habit, not an event.",
+      "Build wealth with a purpose. Know why you are investing.",
+      "Diversification is the only free lunch in investing. Use it.",
+      "The earlier you start, the more compounding works in your favor.",
+      "All investments carry some level of risk. Educate yourself before you commit.",
+      "Plan for financial freedom, not just retirement.",
+      "Protect your downside — ensure you have adequate insurance.",
+      "Build an emergency fund before you start aggressive investing.",
+      "Pay off high-interest debt — it's a guaranteed return.",
+      "Revisit your goals annually — wealth planning is a dynamic process.",
+      "Simplify your finances — complexity is the enemy of clarity.",
+      "Be consistent. Be disciplined. Be patient.",
+      "Know the difference between saving and investing — do both wisely.",
+      "Budgeting isn't restrictive — it's empowering.",
+      "Your financial decisions today shape your freedom tomorrow."
+    ];
+    
+    // Randomly select a financial tip (approximately 1 in 5 responses)
+    if (Math.random() < 0.2) {
+      const randomTip = financialTips[Math.floor(Math.random() * financialTips.length)];
+      systemPrompt += `\n\nConsider including this financial tip in your response: "${randomTip}" `;
     }
     
-    // Create a personalized system prompt based on user profile
-    let systemPrompt = 'You are a financial advisor assistant for NiveshPath, a personal finance education platform for Indian users. You are an expert in Indian financial markets, investment strategies, tax planning, and personal finance management. Your goal is to provide personalized, actionable financial advice based on the user\'s profile and queries. FORMAT YOUR RESPONSES APPROPRIATELY: Present tabular data in markdown tables, use bullet points for lists, and use paragraphs for explanations. Always structure your response for maximum readability and clarity. REMEMBER USER HISTORY: Refer to previous conversations when relevant to provide consistent advice and build on past interactions. ';
+    // Enhance system prompt with intent information if available
+    if (context.intentMatchInfo) {
+      systemPrompt += `The user is asking about ${context.intentMatchInfo.intent.replace('ask_', '').replace('_', ' ')}. `;
+      systemPrompt += `Here's some relevant information to include in your response: ${context.intentMatchInfo.response} `;
+    }
     
     // Add profile completeness information to the prompt
     if (context.profileStatus && !context.profileStatus.complete) {

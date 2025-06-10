@@ -50,7 +50,6 @@ export const AuthProvider = ({ children }) => {
       // Check onboarding status after login
       try {
         const onboardingResponse = await apiService.onboarding.getOnboardingStatus();
-        console.log('Onboarding status response:', onboardingResponse);
         if (onboardingResponse && onboardingResponse.data && onboardingResponse.data.isOnboardingCompleted) {
           setOnboardingCompleted(true);
         } else {
