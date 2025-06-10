@@ -58,54 +58,58 @@ const Landing = ({ darkMode, setDarkMode }) => {
   return (
     <div className="min-h-screen bg-background dark:bg-gray-900 overflow-hidden">
       {/* Navigation */}
-      <nav className="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-50">
+      <nav className="bg-gradient-to-r from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 backdrop-blur-sm sticky top-0 z-50 transition-all duration-300 shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 relative">
             {/* Mobile: Logo centered absolutely */}
             <div className="md:hidden absolute left-0 right-0 mx-auto flex justify-center items-center h-full z-10">
-              <h1 className="text-xl sm:text-2xl font-bold text-primary dark:text-white cursor-pointer" onClick={scrollToTop}>{APP_NAME}</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary dark:from-white dark:to-accent hover:opacity-80 transition-all duration-300 cursor-pointer" onClick={scrollToTop}>{APP_NAME}</h1>
             </div>
             {/* Desktop: Logo aligned left */}
             <div className="hidden md:flex md:flex-1">
               <div className="flex-shrink-0 flex items-center">
-                <h1 className="text-xl sm:text-2xl font-bold text-primary dark:text-white cursor-pointer" onClick={scrollToTop}>{APP_NAME}</h1>
+                <h1 className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary dark:from-white dark:to-accent hover:opacity-80 transition-all duration-300 cursor-pointer" onClick={scrollToTop}>{APP_NAME}</h1>
               </div>
             </div>
             <div className="hidden md:ml-6 md:flex md:items-center md:space-x-4">
               <button
                 onClick={() => setDarkMode(!darkMode)}
-                className="p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-300 transform hover:scale-110"
                 aria-label={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
               >
                 {darkMode ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                   </svg>
                 ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                   </svg>
                 )}
               </button>
            
-              <Link to="/chatbot" className="hidden lg:flex items-center px-3 py-2 text-sm font-medium text-primary dark:text-white hover:text-secondary transition-colors duration-200">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2v-5z" />
-                </svg>
-                AI Advisor
-              </Link>
-              <Link to="/login" className="px-4 py-2 text-sm font-medium text-primary dark:text-white hover:text-secondary transition-colors duration-200">
+              <div className="hidden md:flex space-x-1 bg-gray-100 dark:bg-gray-800 rounded-full p-1 shadow-inner">
+                <Link to="/chatbot" className="flex items-center px-4 py-2 rounded-full transition-all duration-300 hover:bg-white/50 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-accent">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                  </svg>
+                  <span>AI Advisor</span>
+                </Link>
+              </div>
+              
+              <Link to="/login" className="px-4 py-2 text-sm font-medium rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-secondary dark:hover:text-accent transition-all duration-300">
                 Login
               </Link>
-              <button onClick={handleGetStarted} className="btn hover:shadow-md transition-all duration-200">
+              <button onClick={handleGetStarted} className="btn hover:shadow-lg transition-all duration-300 transform hover:scale-105 hover:translate-y-[-2px]">
                 Get Started
               </button>
             </div>
 
-            <div className="-mr-2 flex items-center md:hidden z-20">
+            {/* Mobile: Menu button on right */}
+            <div className="md:hidden absolute right-0 flex items-center h-full z-20">
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
-                className="inline-flex items-center justify-center p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-secondary transition-colors duration-200"
+                className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 transform hover:scale-105"
                 aria-label="Toggle menu"
                 aria-expanded={menuOpen}
               >
@@ -121,13 +125,31 @@ const Landing = ({ darkMode, setDarkMode }) => {
                 )}
               </button>
             </div>
+            {/* Mobile: Dark mode toggle on left */}
+            <div className="md:hidden absolute left-0 flex items-center h-full">
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 transform hover:scale-105"
+                aria-label={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              >
+                {darkMode ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Mobile menu - Improved */}
         {menuOpen && (
-          <div className="md:hidden">
-            <div className="pt-2 pb-3 space-y-2 px-2">
+          <div className="md:hidden animate-fadeIn">
+            <div className="pt-2 pb-3 space-y-2 px-2 border-t border-gray-200 dark:border-gray-700">
               <ScrollLink 
                 to="features" 
                 spy={true} 
@@ -135,10 +157,10 @@ const Landing = ({ darkMode, setDarkMode }) => {
                 offset={-80} 
                 duration={800}
                 onClick={() => setMenuOpen(false)}
-                className="block px-4 py-2 text-base font-medium text-primary hover:text-secondary rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-white transition-colors duration-200 cursor-pointer"
+                className="block px-4 py-2 text-base font-medium rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-secondary dark:hover:text-accent transition-all duration-300 shadow-sm cursor-pointer"
               >
                 <div className="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3 text-secondary dark:text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                   Features
@@ -152,10 +174,10 @@ const Landing = ({ darkMode, setDarkMode }) => {
                 offset={-80} 
                 duration={800}
                 onClick={() => setMenuOpen(false)}
-                className="block px-4 py-2 text-base font-medium text-primary hover:text-secondary rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-white transition-colors duration-200 cursor-pointer"
+                className="block px-4 py-2 text-base font-medium rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-secondary dark:hover:text-accent transition-all duration-300 shadow-sm cursor-pointer"
               >
                 <div className="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3 text-secondary dark:text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
                   </svg>
                   Testimonials
@@ -169,10 +191,10 @@ const Landing = ({ darkMode, setDarkMode }) => {
                 offset={-80} 
                 duration={800}
                 onClick={() => setMenuOpen(false)}
-                className="block px-4 py-2 text-base font-medium text-primary hover:text-secondary rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-white transition-colors duration-200 cursor-pointer"
+                className="block px-4 py-2 text-base font-medium rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-secondary dark:hover:text-accent transition-all duration-300 shadow-sm cursor-pointer"
               >
                 <div className="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3 text-secondary dark:text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   FAQ
