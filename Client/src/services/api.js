@@ -71,7 +71,18 @@ const apiService = {
   
   // Chatbot endpoints
 chatbot: {
-  sendMessage: (message) => api.post('/chatbot/query', { query: message }),
+  // Send message with optional conversationId to maintain session context
+  sendMessage: (message, conversationId = null, isNewPage = false) => {
+    const payload = { 
+      query: message,
+      isNewPage: isNewPage // Include isNewPage flag to signal page navigation
+    };
+    // If conversationId exists, include it to maintain the same session
+    if (conversationId) {
+      payload.conversationId = conversationId;
+    }
+    return api.post('/chatbot/query', payload);
+  },
   getHistory: () => api.get('/chatbot/history'),
   // Ensure userId is properly formatted and validated before using in URL
   getChatHistory: (userId) => {
@@ -107,6 +118,8 @@ chatbot: {
   },
   clearAllChats: () => api.delete('/chatbot/history'),
   submitFeedback: (sessionId, feedbackData) => api.post(`/chatbot/feedback/${sessionId}`, feedbackData),
+  // Get conversation by ID
+  getConversation: (conversationId) => api.get(`/chatbot/conversation/${conversationId}`),
 },
 };
 

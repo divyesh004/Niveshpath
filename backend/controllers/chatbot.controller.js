@@ -53,7 +53,10 @@ exports.submitQuery = async (req, res, next) => {
       return res.status(400).json({ errors: errors.array() });
     }
     
-    const { query, conversationId } = req.body;
+    const { query, conversationId, isNewPage } = req.body;
+    
+    // If isNewPage flag is true, we'll create a new conversation regardless of conversationId
+    // This allows frontend to signal when user has navigated to a new page
     
     // Get user profile for context - with caching
     const profileCacheKey = `profile_${req.user.userId}`;
@@ -178,14 +181,56 @@ exports.submitQuery = async (req, res, next) => {
       finalResponse = profileIncompleteNote + finalResponse;
     }
     
-    // Save the chat session
-    const chatSession = new ChatbotSession({
-      userId: req.user.userId,
-      query,
-      response: finalResponse,
-      context,
-      conversationId: conversationId || new mongoose.Types.ObjectId() // Create new conversation ID if not provided
-    });
+    // Check if we need to update an existing session or create a new one
+    let chatSession;
+    let newConversationId = conversationId;
+    
+    // If isNewPage flag is true, always create a new conversation
+    // This ensures that when user navigates to a new page, a new chat session is created
+    if (isNewPage) {
+      newConversationId = new mongoose.Types.ObjectId();
+      chatSession = new ChatbotSession({
+        userId: req.user.userId,
+        query,
+        response: finalResponse,
+        context,
+        conversationId: newConversationId
+      });
+    } else if (conversationId) {
+      // Try to find the most recent session in this conversation
+      const existingSession = await ChatbotSession.findOne({
+        userId: req.user.userId,
+        conversationId: conversationId
+      }).sort({ timestamp: -1 });
+      
+      if (existingSession) {
+        // Update the existing session with new query and response
+        chatSession = existingSession;
+        chatSession.query = query;
+        chatSession.response = finalResponse;
+        chatSession.context = context;
+        chatSession.timestamp = new Date(); // Update timestamp
+      } else {
+        // If no session found with this conversationId, create a new one
+        chatSession = new ChatbotSession({
+          userId: req.user.userId,
+          query,
+          response: finalResponse,
+          context,
+          conversationId: conversationId
+        });
+      }
+    } else {
+      // No conversationId provided, create a new session with a new conversationId
+      newConversationId = new mongoose.Types.ObjectId();
+      chatSession = new ChatbotSession({
+        userId: req.user.userId,
+        query,
+        response: finalResponse,
+        context,
+        conversationId: newConversationId
+      });
+    }
     
     await chatSession.save();
     
@@ -194,7 +239,7 @@ exports.submitQuery = async (req, res, next) => {
       const responseJson = {
         response: finalResponse,
         sessionId: chatSession._id,
-        conversationId: chatSession.conversationId,
+        conversationId: newConversationId, // Use the potentially new conversationId
       };
       if (!profileStatus.complete) {
         responseJson.profileStatus = profileStatus;
@@ -277,6 +322,50 @@ exports.getChatHistory = async (req, res, next) => {
       res.status(200).json(result);
     }
   } catch (error) {
+    next(error);
+  }
+};
+
+// Get conversation by ID - returns all messages in a specific conversation
+exports.getConversation = async (req, res, next) => {
+  try {
+    const { conversationId } = req.params;
+    const userId = req.user.userId;
+    
+    if (!conversationId) {
+      return res.status(400).json({ message: 'Conversation ID is required' });
+    }
+    
+    // Create cache key based on conversation ID
+    const cacheKey = `conversation_${conversationId}`;
+    
+    // Try to get from cache first
+    const cachedResult = chatbotCache.get(cacheKey);
+    if (cachedResult) {
+      return res.status(200).json(cachedResult);
+    }
+    
+    // Cache miss - fetch from database
+    const conversation = await ChatbotSession.find({
+      userId,
+      conversationId
+    }).sort({ timestamp: 1 }).lean();
+    
+    if (!conversation || conversation.length === 0) {
+      return res.status(404).json({ message: 'Conversation not found' });
+    }
+    
+    const result = {
+      conversation,
+      conversationId
+    };
+    
+    // Cache the result for future requests
+    chatbotCache.set(cacheKey, result, 300); // 5 minutes TTL
+    
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('Error fetching conversation:', error);
     next(error);
   }
 };

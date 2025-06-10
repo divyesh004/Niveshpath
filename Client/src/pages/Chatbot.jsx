@@ -1593,6 +1593,11 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
     
     // Starting a new chat
     
+    // Set flag to indicate this is a new page/conversation
+    sessionStorage.setItem('isNewPageNavigation', 'true');
+    // Clear any existing conversation ID
+    sessionStorage.removeItem('currentConversationId');
+    
     // Reset messages and show welcome message
     setMessages([]);
     setShowWelcome(true); // Show welcome message for new chat
@@ -1669,7 +1674,32 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
       // Send message to backend API
       // Use the input from the userMessage, as 'input' state is cleared
       const currentInput = userMessage.text;
-      const response = await apiService.chatbot.sendMessage(currentInput.trim());
+      
+      // Get current conversationId if it exists in the current chat session
+      let currentConversationId = null;
+      if (messages.length > 0 && sessionStorage.getItem('currentConversationId')) {
+        currentConversationId = sessionStorage.getItem('currentConversationId');
+      }
+      
+      // Check if this is a new page navigation (based on a flag we'll set when navigating)
+      const isNewPage = sessionStorage.getItem('isNewPageNavigation') === 'true';
+      
+      // Send message with appropriate parameters
+      const response = await apiService.chatbot.sendMessage(
+        currentInput.trim(), 
+        currentConversationId,
+        isNewPage
+      );
+      
+      // Store the conversationId for future messages on this page
+      if (response.data && response.data.conversationId) {
+        sessionStorage.setItem('currentConversationId', response.data.conversationId);
+      }
+      
+      // Reset the new page navigation flag
+      if (isNewPage) {
+        sessionStorage.removeItem('isNewPageNavigation');
+      }
       
       // Process the response from the API
       if (response.data && response.data.response) {

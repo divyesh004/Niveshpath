@@ -44,6 +44,9 @@ router.get('/user/:userId/history', chatbotController.getUserChatHistory);
 // Get a specific chat session
 router.get('/session/:sessionId', chatbotMiddleware.validateSessionOwnership, chatbotController.getChatSession);
 
+// Get all messages in a specific conversation
+router.get('/conversation/:conversationId', chatbotController.getConversation);
+
 // Submit feedback for a chat session
 router.post(
   '/feedback/:sessionId',
