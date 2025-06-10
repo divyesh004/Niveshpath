@@ -87,7 +87,7 @@ exports.register = async (req, res, next) => {
     });
 
     // Create verification URL
-    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`;
+    const verificationUrl = `${process.env.FRONTEND_URL || 'https://www.niveshpath.deepnex.in'}/verify-email?token=${verificationToken}`;
 
     // Send verification email
     const mailOptions = {
@@ -390,7 +390,7 @@ exports.sendVerificationEmail = async (req, res, next) => {
     });
 
     // Create verification URL
-    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`;
+    const verificationUrl = `${process.env.FRONTEND_URL || 'https://www.niveshpath.deepnex.in'}/verify-email?token=${verificationToken}`;
 
     // Send verification email
     const mailOptions = {
