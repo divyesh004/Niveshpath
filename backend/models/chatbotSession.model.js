@@ -1,11 +1,6 @@
 const mongoose = require('mongoose');
 
-const chatbotSessionSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
+const messageSchema = new mongoose.Schema({
   query: {
     type: String,
     required: true
@@ -13,6 +8,22 @@ const chatbotSessionSchema = new mongoose.Schema({
   response: {
     type: String,
     required: true
+  },
+  timestamp: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+const chatbotSessionSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  messages: {
+    type: [messageSchema],
+    default: []
   },
   timestamp: {
     type: Date,

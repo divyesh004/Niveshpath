@@ -181,9 +181,16 @@ exports.submitQuery = async (req, res, next) => {
       finalResponse = profileIncompleteNote + finalResponse;
     }
     
-    // Check if we need to update an existing session or create a new one
+    // Check if we need to create a new session or update an existing one
     let chatSession;
     let newConversationId = conversationId;
+    
+    // Create a new message object
+    const newMessage = {
+      query,
+      response: finalResponse,
+      timestamp: new Date()
+    };
     
     // If isNewPage flag is true, always create a new conversation
     // This ensures that when user navigates to a new page, a new chat session is created
@@ -191,31 +198,28 @@ exports.submitQuery = async (req, res, next) => {
       newConversationId = new mongoose.Types.ObjectId();
       chatSession = new ChatbotSession({
         userId: req.user.userId,
-        query,
-        response: finalResponse,
+        messages: [newMessage],
         context,
         conversationId: newConversationId
       });
     } else if (conversationId) {
-      // Try to find the most recent session in this conversation
+      // Try to find the existing session in this conversation
       const existingSession = await ChatbotSession.findOne({
         userId: req.user.userId,
         conversationId: conversationId
       }).sort({ timestamp: -1 });
       
       if (existingSession) {
-        // Update the existing session with new query and response
+        // Update the existing session by adding the new message to the messages array
         chatSession = existingSession;
-        chatSession.query = query;
-        chatSession.response = finalResponse;
+        chatSession.messages.push(newMessage);
         chatSession.context = context;
         chatSession.timestamp = new Date(); // Update timestamp
       } else {
         // If no session found with this conversationId, create a new one
         chatSession = new ChatbotSession({
           userId: req.user.userId,
-          query,
-          response: finalResponse,
+          messages: [newMessage],
           context,
           conversationId: conversationId
         });
@@ -225,8 +229,7 @@ exports.submitQuery = async (req, res, next) => {
       newConversationId = new mongoose.Types.ObjectId();
       chatSession = new ChatbotSession({
         userId: req.user.userId,
-        query,
-        response: finalResponse,
+        messages: [newMessage],
         context,
         conversationId: newConversationId
       });
@@ -281,6 +284,19 @@ exports.getChatHistory = async (req, res, next) => {
       .limit(parsedLimit)
       .lean();
     
+    // Process each session to include messages
+    const processedChatHistory = chatHistory.map(session => {
+      // Create a new object to avoid modifying the original
+      const processedSession = { ...session };
+      
+      // Ensure messages array exists
+      if (!processedSession.messages) {
+        processedSession.messages = [];
+      }
+      
+      return processedSession;
+    });
+    
     // Use countDocuments only when necessary (first page or explicit count needed)
     // For pagination, we can often determine if there are more items without an extra count query
     let total;
@@ -305,7 +321,7 @@ exports.getChatHistory = async (req, res, next) => {
     }
     
     const result = {
-      chatHistory,
+      chatHistory: processedChatHistory,
       pagination: {
         total,
         limit: parsedLimit,
@@ -346,17 +362,32 @@ exports.getConversation = async (req, res, next) => {
     }
     
     // Cache miss - fetch from database
-    const conversation = await ChatbotSession.find({
+    const sessions = await ChatbotSession.find({
       userId,
       conversationId
     }).sort({ timestamp: 1 }).lean();
     
-    if (!conversation || conversation.length === 0) {
+    if (!sessions || sessions.length === 0) {
       return res.status(404).json({ message: 'Conversation not found' });
     }
     
+    // Process the conversation to include all messages
+    let allMessages = [];
+    
+    // Process each session
+    sessions.forEach(session => {
+      // If session has messages array, add them to allMessages
+      if (session.messages && session.messages.length > 0) {
+        allMessages = allMessages.concat(session.messages);
+      }
+    });
+    
+    // Sort all messages by timestamp
+    allMessages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    
     const result = {
-      conversation,
+      conversation: sessions,
+      messages: allMessages,
       conversationId
     };
     

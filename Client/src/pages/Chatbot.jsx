@@ -1049,8 +1049,13 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
 
   // Function to load a chat from history (now inside Chatbot component)
   const loadChatFromHistory = async (chat) => {
-    // First fetch the latest chat history to ensure we have the most up-to-date data
-    await fetchChatHistory();
+    try {
+      // First fetch the latest chat history to ensure we have the most up-to-date data
+      await fetchChatHistory();
+    } catch (fetchError) {
+      console.error('Error fetching chat history:', fetchError);
+      // Continue with loading the chat even if fetching history fails
+    }
     
     // Ensure chat object and chat.id are present before trying to load
     if (!chat || !chat.id) {
@@ -1063,28 +1068,66 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
     }
 
     try {
-      // Use chat.messages if available, otherwise default to an empty array.
-      // This ensures messagesToLoad is always an array.
-      const messagesToLoad = (chat.messages && Array.isArray(chat.messages)) ? chat.messages : [];
+      // Fetch the complete session data from the API
+      let messagesToLoad = [];
+      
+      try {
+        // Get session data from API
+        const sessionResponse = await apiService.chatbot.getChatSession(chat.id);
+        
+        if (sessionResponse && sessionResponse.data && sessionResponse.data.chatSession) {
+          const sessionData = sessionResponse.data.chatSession;
+          
+          // Use messages from the session if available
+          if (sessionData.messages && Array.isArray(sessionData.messages)) {
+            messagesToLoad = sessionData.messages;
+            console.log('Loaded messages from session API:', messagesToLoad.length);
+          }
+        }
+      } catch (sessionError) {
+        console.error('Error fetching session data:', sessionError);
+        // Fallback to chat.messages if API call fails
+        messagesToLoad = (chat.messages && Array.isArray(chat.messages)) ? chat.messages : [];
+        console.log('Using fallback messages from chat history:', messagesToLoad.length);
+      }
+      
+      // If no messages from API, use the ones from chat history as fallback
+      if (messagesToLoad.length === 0) {
+        messagesToLoad = (chat.messages && Array.isArray(chat.messages)) ? chat.messages : [];
+        console.log('No messages from API, using chat history:', messagesToLoad.length);
+      }
 
       // Format messages for display using messagesToLoad
       const formattedMessages = messagesToLoad.map((msg, index) => {
         // Basic validation for message structure
-        if (!msg || typeof msg.sender === 'undefined' || typeof msg.content === 'undefined') {
-          console.warn('Message missing sender or content in chat history:', msg);
-          return null;
-        }
-        // More robust check for content
-        if (typeof msg.content !== 'string' && typeof msg.text !== 'string') {
+        if (!msg || (typeof msg.content === 'undefined' && typeof msg.text === 'undefined' && 
+            typeof msg.response === 'undefined' && typeof msg.query === 'undefined')) {
           console.warn('Message missing content in chat history:', msg);
           return null;
         }
         
+        // Determine if the message is from the bot based on role, sender, or isBot fields
+        const isBot = msg.role === 'assistant' || 
+                     msg.sender === 'bot' || 
+                     msg.isBot === true || 
+                     (typeof msg.response !== 'undefined');
+        
+        // Get the message content from appropriate field
+        // For user messages, prefer query field, for bot messages prefer response field
+        const messageContent = isBot 
+          ? (msg.response || msg.content || msg.text || '') 
+          : (msg.query || msg.content || msg.text || '');
+        
+        // Store the original query for user messages to ensure it's displayed correctly
+        // For bot messages, use the query field if available
+        const originalQuery = !isBot ? (msg.query || msg.content || msg.text || '') : msg.query || null;
+        
         return {
-          id: `${chat.id}-${msg.sender}-${index}`,
-          text: msg.content || msg.text || '',
-          sender: msg.sender || (msg.isBot ? 'bot' : 'user'),
-          isBot: msg.sender === 'bot' || msg.isBot || false,
+          id: `${chat.id}-${index}`, // Simplified ID generation
+          text: messageContent,
+          query: originalQuery, // Add the original query for user messages
+          sender: isBot ? 'bot' : 'user',
+          isBot: isBot,
           userId: msg.userId || currentUser?.id || 'guest',
           timestamp: msg.timestamp || new Date().toISOString()
         };
@@ -1129,13 +1172,19 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
       
       // Set the session ID and save it to sessionStorage
       setSessionId(chat.id);
-      sessionStorage.setItem('niveshpath_session_id', chat.id);
       
-      // Save messages to sessionStorage
-      if (formattedMessages.length > 0) {
-        sessionStorage.setItem('niveshpath_messages', JSON.stringify(formattedMessages));
-      } else {
-        sessionStorage.removeItem('niveshpath_messages');
+      try {
+        sessionStorage.setItem('niveshpath_session_id', chat.id);
+        
+        // Save messages to sessionStorage
+        if (formattedMessages.length > 0) {
+          sessionStorage.setItem('niveshpath_messages', JSON.stringify(formattedMessages));
+        } else {
+          sessionStorage.removeItem('niveshpath_messages');
+        }
+      } catch (storageError) {
+        console.error('Error saving to sessionStorage:', storageError);
+        // Continue with the function even if sessionStorage fails
       }
       
       // Clear input field and any errors
@@ -1243,45 +1292,57 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
     checkOnboardingStatus();
     
     // Restore session ID and messages from sessionStorage if available
-    const savedSessionId = sessionStorage.getItem('niveshpath_session_id');
-    const savedMessages = sessionStorage.getItem('niveshpath_messages');
-    
-    if (savedSessionId) {
-      setSessionId(savedSessionId);
+    try {
+      const savedSessionId = sessionStorage.getItem('niveshpath_session_id');
+      const savedMessages = sessionStorage.getItem('niveshpath_messages');
       
-      // If we have saved messages, restore them
-      if (savedMessages) {
-        try {
-          const parsedMessages = JSON.parse(savedMessages);
-          if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
-            setMessages(parsedMessages);
-            setShowWelcome(false); // Don't show welcome message if we have messages
+      if (savedSessionId) {
+        setSessionId(savedSessionId);
+        
+        // If we have saved messages, restore them
+        if (savedMessages) {
+          try {
+            const parsedMessages = JSON.parse(savedMessages);
+            if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
+              setMessages(parsedMessages);
+              setShowWelcome(false); // Don't show welcome message if we have messages
+            }
+          } catch (error) {
+            console.error('Error parsing saved messages:', error);
+            // If there's an error parsing messages, clear the saved messages
+            sessionStorage.removeItem('niveshpath_messages');
+            setShowWelcome(true);
           }
-        } catch (error) {
-          console.error('Error parsing saved messages:', error);
-          // If there's an error parsing messages, clear the saved messages
-          sessionStorage.removeItem('niveshpath_messages');
-          setShowWelcome(true);
+        } else {
+          setShowWelcome(false); // Don't show welcome message if we have a session
         }
       } else {
-        setShowWelcome(false); // Don't show welcome message if we have a session
+        // Show welcome message only for new sessions
+        setShowWelcome(true);
       }
-    } else {
-      // Show welcome message only for new sessions
+    } catch (error) {
+      console.error('Error loading session data from sessionStorage:', error);
+      // Set default state in case of error
       setShowWelcome(true);
+      setMessages([]);
     }
     
   }, [currentUser, isAuthenticated, navigate, onboardingCompleted]);
   
   // Save sessionId and messages to sessionStorage whenever they change
   useEffect(() => {
-    if (sessionId) {
-      sessionStorage.setItem('niveshpath_session_id', sessionId);
-      
-      // Also save the current messages to sessionStorage
-      if (messages && messages.length > 0) {
-        sessionStorage.setItem('niveshpath_messages', JSON.stringify(messages));
+    try {
+      if (sessionId) {
+        sessionStorage.setItem('niveshpath_session_id', sessionId);
+        
+        // Also save the current messages to sessionStorage
+        if (messages && messages.length > 0) {
+          sessionStorage.setItem('niveshpath_messages', JSON.stringify(messages));
+        }
       }
+    } catch (error) {
+      console.error('Error saving session data to sessionStorage:', error);
+      // Don't show error toast to avoid disrupting user experience
     }
   }, [sessionId, messages]);
   
@@ -1296,15 +1357,16 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
   const fetchChatHistory = async () => {
     if (!isAuthenticated) return;
 
-    setLoading(true);
-    setError(null);
-    let actualApiChatSessions = [];
-
     try {
-      // Authentication is now handled via HTTP-only cookies
-      // and apiService automatically includes withCredentials: true
+      setLoading(true);
+      setError(null);
+      let actualApiChatSessions = [];
 
-      const userId = currentUser?.id?.toString().replace(/^:/, '');
+      try {
+        // Authentication is now handled via HTTP-only cookies
+        // and apiService automatically includes withCredentials: true
+
+        const userId = currentUser?.id?.toString().replace(/^:/, '');
       let response;
 
       if (userId) {
@@ -1407,33 +1469,41 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
       if (processedHistory.length > 0) {
         setChatHistory(processedHistory);
         
-        // Check if we have a saved session ID in sessionStorage
-        const savedSessionId = sessionStorage.getItem('niveshpath_session_id');
-        
-        if (savedSessionId) {
-          // Find the chat with the matching ID
-          const savedChat = processedHistory.find(chat => chat.id === savedSessionId);
+        try {
+          // Check if we have a saved session ID in sessionStorage
+          const savedSessionId = sessionStorage.getItem('niveshpath_session_id');
           
-          if (savedChat) {
-            // Load the saved chat
-            // Restoring chat session from localStorage
+          if (savedSessionId) {
+            // Find the chat with the matching ID
+            const savedChat = processedHistory.find(chat => chat.id === savedSessionId);
             
-            if (savedChat.messages && savedChat.messages.length > 0) {
-              setMessages(savedChat.messages);
-              setShowWelcome(false);
-            } else {
-              setMessages([]);
-              setShowWelcome(true);
+            if (savedChat) {
+              // Load the saved chat
+              // Restoring chat session from localStorage
+              
+              if (savedChat.messages && savedChat.messages.length > 0) {
+                setMessages(savedChat.messages);
+                setShowWelcome(false);
+              } else {
+                setMessages([]);
+                setShowWelcome(true);
+              }
+            } else {  
+              // If the saved session ID doesn't match any chat, show welcome
+              if (messages.length === 0) { // Only show welcome if no active chat is loaded
+                setShowWelcome(true);
+              }
             }
-          } else {  
-            // If the saved session ID doesn't match any chat, show welcome
+          } else {
+            // If no saved session ID, show welcome if no messages
             if (messages.length === 0) { // Only show welcome if no active chat is loaded
               setShowWelcome(true);
             }
           }
-        } else {
-          // If no saved session ID, show welcome if no messages
-          if (messages.length === 0) { // Only show welcome if no active chat is loaded
+        } catch (storageError) {
+          console.error('Error accessing sessionStorage:', storageError);
+          // Set default state in case of error
+          if (messages.length === 0) {
             setShowWelcome(true);
           }
         }
@@ -1441,7 +1511,19 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
         setMessages([]);
         setChatHistory([]);
         setShowWelcome(true);
-        sessionStorage.removeItem('niveshpath_session_id'); // Clear session ID if no history
+        try {
+          sessionStorage.removeItem('niveshpath_session_id'); // Clear session ID if no history
+        } catch (storageError) {
+          console.error('Error removing session ID from sessionStorage:', storageError);
+          // Continue even if sessionStorage fails
+        }
+      }
+      } catch (innerError) {
+        console.error('Error processing chat history data:', innerError);
+        // Handle inner try-catch errors
+        setMessages([]);
+        setChatHistory([]);
+        setShowWelcome(true);
       }
 
     } catch (err) {
@@ -1451,6 +1533,12 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
       setMessages([]);
       setChatHistory([]);
       setShowWelcome(true);
+      try {
+        sessionStorage.removeItem('niveshpath_session_id'); // Clear session ID if error occurs
+      } catch (storageError) {
+        console.error('Error removing session ID from sessionStorage:', storageError);
+        // Continue even if sessionStorage fails
+      }
     } finally {
       setLoading(false);
     }
@@ -1533,17 +1621,27 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
           }
           // Clear session ID and messages from sessionStorage if the deleted chat was the active one
           setSessionId(null);
-          sessionStorage.removeItem('niveshpath_session_id');
-          sessionStorage.removeItem('niveshpath_messages');
+          try {
+            sessionStorage.removeItem('niveshpath_session_id');
+            sessionStorage.removeItem('niveshpath_messages');
+          } catch (storageError) {
+            console.error('Error clearing sessionStorage:', storageError);
+            // Continue execution without disrupting the flow
+          }
         }
       }
       
       // If the deleted chat ID matches the current session ID, clear it and messages
-      const savedSessionId = sessionStorage.getItem('niveshpath_session_id');
-      if (savedSessionId === chatId) {
-        setSessionId(null);
-        sessionStorage.removeItem('niveshpath_session_id');
-        sessionStorage.removeItem('niveshpath_messages');
+      try {
+        const savedSessionId = sessionStorage.getItem('niveshpath_session_id');
+        if (savedSessionId === chatId) {
+          setSessionId(null);
+          sessionStorage.removeItem('niveshpath_session_id');
+          sessionStorage.removeItem('niveshpath_messages');
+        }
+      } catch (storageError) {
+        console.error('Error accessing or clearing sessionStorage:', storageError);
+        // Continue execution without disrupting the flow
       }
       // No localStorage updates needed
     } catch (error) {
@@ -1584,8 +1682,13 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
       
       // Clear session ID and messages from sessionStorage
       setSessionId(null);
-      sessionStorage.removeItem('niveshpath_session_id');
-      sessionStorage.removeItem('niveshpath_messages');
+      try {
+        sessionStorage.removeItem('niveshpath_session_id');
+        sessionStorage.removeItem('niveshpath_messages');
+      } catch (storageError) {
+        console.error('Error clearing sessionStorage:', storageError);
+        // Continue execution without disrupting the flow
+      }
       
       // Create a default chat entry after clearing
       const defaultChat = {
@@ -1632,9 +1735,14 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
     // Starting a new chat
     
     // Set flag to indicate this is a new page/conversation
-    sessionStorage.setItem('isNewPageNavigation', 'true');
-    // Clear any existing conversation ID
-    sessionStorage.removeItem('currentConversationId');
+    try {
+      sessionStorage.setItem('isNewPageNavigation', 'true');
+      // Clear any existing conversation ID
+      sessionStorage.removeItem('currentConversationId');
+    } catch (storageError) {
+      console.error('Error setting sessionStorage flags:', storageError);
+      // Continue execution without disrupting the flow
+    }
     
     // Reset messages and show welcome message
     setMessages([]);
@@ -1651,10 +1759,15 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
       
     // Set the new session ID
     setSessionId(newChatId.toString());
-    sessionStorage.setItem('niveshpath_session_id', newChatId.toString());
-    
-    // Clear saved messages from sessionStorage
-    sessionStorage.removeItem('niveshpath_messages');
+    try {
+      sessionStorage.setItem('niveshpath_session_id', newChatId.toString());
+      
+      // Clear saved messages from sessionStorage
+      sessionStorage.removeItem('niveshpath_messages');
+    } catch (storageError) {
+      console.error('Error updating sessionStorage in new chat:', storageError);
+      // Continue execution without disrupting the flow
+    }
     
     // Add new chat to history with user ID
     const newChatEntry = {
@@ -1690,12 +1803,17 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
     }
     
     // Check if user has completed onboarding - only check once per session
-    const hasCheckedOnboarding = sessionStorage.getItem('onboardingChecked');
-    
-    if (!hasCheckedOnboarding && !onboardingCompleted) {
-      setShowOnboarding(true);
-      sessionStorage.setItem('onboardingChecked', 'true');
-      return;
+    try {
+      const hasCheckedOnboarding = sessionStorage.getItem('onboardingChecked');
+      
+      if (!hasCheckedOnboarding && !onboardingCompleted) {
+        setShowOnboarding(true);
+        sessionStorage.setItem('onboardingChecked', 'true');
+        return;
+      }
+    } catch (storageError) {
+      console.error('Error checking onboarding status in sessionStorage:', storageError);
+      // Continue execution without disrupting the flow
     }
     
     // Clear any previous errors
@@ -1723,12 +1841,19 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
       
       // Get current conversationId if it exists in the current chat session
       let currentConversationId = null;
-      if (messages.length > 0 && sessionStorage.getItem('currentConversationId')) {
-        currentConversationId = sessionStorage.getItem('currentConversationId');
-      }
+      let isNewPage = false;
       
-      // Check if this is a new page navigation (based on a flag we'll set when navigating)
-      const isNewPage = sessionStorage.getItem('isNewPageNavigation') === 'true';
+      try {
+        if (messages.length > 0 && sessionStorage.getItem('currentConversationId')) {
+          currentConversationId = sessionStorage.getItem('currentConversationId');
+        }
+        
+        // Check if this is a new page navigation (based on a flag we'll set when navigating)
+        isNewPage = sessionStorage.getItem('isNewPageNavigation') === 'true';
+      } catch (storageError) {
+        console.error('Error getting conversation data from sessionStorage:', storageError);
+        // Continue execution without disrupting the flow
+      }
       
       // Send message with appropriate parameters
       const response = await apiService.chatbot.sendMessage(
@@ -1738,13 +1863,18 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
       );
       
       // Store the conversationId for future messages on this page
-      if (response.data && response.data.conversationId) {
-        sessionStorage.setItem('currentConversationId', response.data.conversationId);
-      }
-      
-      // Reset the new page navigation flag
-      if (isNewPage) {
-        sessionStorage.removeItem('isNewPageNavigation');
+      try {
+        if (response.data && response.data.conversationId) {
+          sessionStorage.setItem('currentConversationId', response.data.conversationId);
+        }
+        
+        // Reset the new page navigation flag
+        if (isNewPage) {
+          sessionStorage.removeItem('isNewPageNavigation');
+        }
+      } catch (storageError) {
+        console.error('Error updating conversation data in sessionStorage:', storageError);
+        // Continue execution without disrupting the flow
       }
       
       // Process the response from the API
@@ -1752,7 +1882,8 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
         const botMessage = { 
           id: Date.now() + 1, // Ensure unique ID
           text: response.data.response, 
-          isBot: true 
+          isBot: true,
+          query: currentInput.trim() // Set query field to user's input
         };
         
         setMessages(prevMessages => {
@@ -2241,6 +2372,14 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
                   {/* Message content */}
                   {message.isBot ? (
                     <div className="text-gray-800 dark:text-white text-sm sm:text-base prose prose-sm dark:prose-invert max-w-none notion-like-content">
+                      {message.query && (
+                        <div className="mb-2 p-2 bg-gray-100 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                          <div className="flex items-center mb-1">
+                            <span className="text-xs font-semibold bg-secondary/20 dark:bg-secondary/30 text-secondary dark:text-secondary-light px-2 py-0.5 rounded-full">Your Question</span>
+                          </div>
+                          <div className="text-sm text-gray-700 dark:text-gray-300">{message.query}</div>
+                        </div>
+                      )}
                       <div>
                         {formatBotMessage(message.text)}
                         {/* Copy and Share buttons below the message */}
@@ -2284,7 +2423,7 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-semibold bg-secondary/20 dark:bg-secondary/30 text-secondary dark:text-secondary-light px-2 py-0.5 rounded-full">Your Question</span>
                       </div>
-                      {message.text}
+                      {message.query || message.text}
                     </div>
                   )}
                 </div>
@@ -2450,8 +2589,7 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
           
           .notion-like-content td, .notion-like-content th {
             padding: 0.5em 0.75em;
-            border: 1px solid #e1e1e1;
-          }
+            border: 1px solid #e1e1e1;          }
           
           .dark .notion-like-content td, .dark .notion-like-content th {
             border-color: #4a4a4a;
