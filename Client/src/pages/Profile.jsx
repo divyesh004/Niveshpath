@@ -430,7 +430,7 @@ const Profile = ({ darkMode, setDarkMode }) => {
                 Dashboard
               </Link>
               <Link to="/chatbot" className="hidden md:block text-sm sm:text-base text-gray-700 dark:text-gray-300 hover:text-secondary">
-                AI Advisor - {APP_NAME}
+                AI Advisor
               </Link>
             </div>
           </div>
