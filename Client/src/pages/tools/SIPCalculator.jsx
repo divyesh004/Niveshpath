@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import MobileNavigation from '../../components/MobileNavigation';
+import LightLogo from '../../assets/light_logo.png';
+import DarkLogo from '../../assets/dark_logo.png';
 
 // Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -223,12 +225,18 @@ const SIPCalculator = ({ darkMode, setDarkMode }) => {
   return (
     <div className="page-container relative">
       {/* Header/Navigation */}
-      <header className="app-header">
+      <header className="app-header overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
-                <Link to="/dashboard" className="text-xl sm:text-2xl font-bold text-primary dark:text-white hover:text-secondary dark:hover:text-accent transition-colors duration-200">NiveshPath</Link>
+                <Link to="/dashboard" className="hover:opacity-80 transition-all duration-300">
+                  <img 
+                    src={darkMode ? DarkLogo : LightLogo} 
+                    alt="NiveshPath Logo" 
+                    className="h-16 sm:h-20 md:h-24 w-auto" 
+                  />
+                </Link>
               </div>
             </div>
             <div className="flex items-center space-x-2 md:space-x-4">

@@ -7,6 +7,8 @@ import CurrencyRates from '../components/CurrencyRates';
 import RBINews from '../components/RBINews';
 import Footer from '../components/Footer';
 import MobileNavigation from '../components/MobileNavigation';
+import LightLogo from '../assets/light_logo.png';
+import DarkLogo from '../assets/dark_logo.png';
 
 const Dashboard = ({ darkMode, setDarkMode }) => {
   const { currentUser, loading: authLoading } = useAuth(); // Get currentUser and auth loading state
@@ -149,12 +151,18 @@ const Dashboard = ({ darkMode, setDarkMode }) => {
   return (
     <div className="page-container">
       {/* Header/Navigation */}
-      <header className="app-header bg-gradient-to-r from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 backdrop-blur-sm sticky top-0 z-50 transition-all duration-300 shadow-md">
+      <header className="app-header bg-gradient-to-r from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 backdrop-blur-sm sticky top-0 z-50 transition-all duration-300 shadow-md overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
-                <Link to="/" className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary dark:from-white dark:to-accent hover:opacity-80 transition-all duration-300">{APP_NAME}</Link>
+                <Link to="/" className="hover:opacity-80 transition-all duration-300">
+                  <img 
+                    src={darkMode ? DarkLogo : LightLogo} 
+                    alt="NiveshPath Logo" 
+                    className="h-16 sm:h-20 md:h-24 w-auto" 
+                  />
+                </Link>
               </div>
             </div>
             <div className="flex items-center space-x-2 md:space-x-4">

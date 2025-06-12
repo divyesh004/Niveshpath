@@ -6,6 +6,8 @@ import apiService from '../services/api';
 import Skeleton from '../components/Skeleton';
 import { APP_NAME, APP_DESCRIPTION } from '../config';
 import MobileNavigation from '../components/MobileNavigation';
+import LightLogo from '../assets/light_logo.png';
+import DarkLogo from '../assets/dark_logo.png';
 
 const Profile = ({ darkMode, setDarkMode }) => {
   const navigate = useNavigate();
@@ -399,12 +401,18 @@ const Profile = ({ darkMode, setDarkMode }) => {
   return (
     <div className="min-h-screen bg-background dark:bg-gray-900 overflow-hidden">
       {/* Header/Navigation */}
-      <header className="bg-white dark:bg-gray-900 shadow-sm">
+      <header className="bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
-                <Link to="/" className="text-xl sm:text-2xl font-bold text-primary dark:text-white">{APP_NAME}</Link>
+                <Link to="/" className="hover:opacity-80 transition-all duration-300">
+                  <img 
+                    src={darkMode ? DarkLogo : LightLogo} 
+                    alt="NiveshPath Logo" 
+                    className="h-16 sm:h-20 md:h-24 w-auto" 
+                  />
+                </Link>
               </div>
             </div>
             <div className="flex items-center space-x-2 sm:space-x-4">
