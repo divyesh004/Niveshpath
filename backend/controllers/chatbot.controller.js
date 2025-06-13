@@ -1,11 +1,16 @@
 const axios = require('axios');
 const { validationResult } = require('express-validator');
+
 const ChatbotSession = require('../models/chatbotSession.model');
 const Profile = require('../models/profile.model');
 const mongoose = require('mongoose');
 const { chatbotCache, userProfileCache } = require('../services/cache.service');
 const compression = require('compression');
 const util = require('util');
+
+// Define shortQueryPattern - a regex to detect greeting phrases
+const shortQueryPattern = /^(hi|hello|hey|namaste|greetings|good morning|good afternoon|good evening|howdy|hola|नमस्ते|हैलो|हाय)$/i;
+
 // Add Redis client if available in production
 // const redis = require('redis');
 // const redisClient = redis.createClient(process.env.REDIS_URL);
@@ -1098,10 +1103,10 @@ async function callMistralAPI(query, context, previousMessages = []) {
         systemPrompt += 'The user is asking about future financial plans or advice. ';
       }
       
-      systemPrompt += 'IMPORTANT: Base your recommendations STRICTLY on their profile data. Only suggest plans that align with their specific financial goals, risk appetite, income level, and demographic information. DO NOT provide generic advice. If their profile lacks critical information, suggest completing those specific profile fields first. ALWAYS analyze age and income implications in your advice. ';
+      systemPrompt += 'IMPORTANT: Base your recommendations STRICTLY on their profile data. Only suggest plans that align with their specific financial goals, risk appetite, income level, and demographic information. DO NOT provide generic advice. If their profile lacks critical information, suggest completing the profile first. ALWAYS analyze age and income implications in your advice. ';
     }
     
-    systemPrompt += 'Provide helpful, accurate information about personal finance topics, especially in the Indian context. IMPORTANT FORMATTING INSTRUCTIONS: 1) When presenting numerical data, statistics, or comparisons, ALWAYS use markdown tables. 2) When listing options, steps, or multiple points, ALWAYS use bullet points. 3) For explanations and general advice, use well-structured paragraphs with clear headings. 4) For important financial metrics or key figures, highlight them in bold. 5) When explaining complex concepts, break them down into numbered steps. PERSONALIZATION INSTRUCTIONS: 1) Always analyze the user\'s complete profile before responding. 2) Tailor your advice to their specific financial situation, goals, and risk tolerance. 3) Consider their age, income, and investment timeframe in all recommendations. 4) Provide specific investment vehicles and strategies that match their profile. 5) When discussing tax implications, be specific to their income bracket. LANGUAGE ADAPTABILITY: Use a conversational, friendly tone and respond in a natural way that feels human-like. Include some personality in your responses, use analogies where appropriate, and vary your sentence structure. When responding in Hindi, use natural conversational Hindi rather than formal language. Respond as if you are having a real conversation with the user. EDUCATIONAL APPROACH: 1) Explain financial concepts clearly without jargon. 2) Provide context for why certain strategies are recommended. 3) Include learning resources when introducing new concepts. 4) Build financial literacy through your explanations.';
+    systemPrompt += 'Provide helpful, accurate information about personal finance topics, especially in the Indian context. IMPORTANT FORMATTING INSTRUCTIONS: 1) When presenting numerical data, statistics, or comparisons, ALWAYS use markdown tables. 2) When listing options, steps, or multiple points, ALWAYS use bullet points. 3) For explanations and general advice, use well-structured paragraphs with clear headings. 4) For important financial metrics or key figures, highlight them in bold. 5) When explaining complex concepts, break them down into numbered steps. PERSONALIZATION INSTRUCTIONS: 1) Always analyze the user\'s complete profile before responding. 2) Tailor your advice to their specific financial situation, goals, and risk tolerance. 3) Consider their age, income, and investment timeframe in all recommendations. 4) Provide specific investment vehicles and strategies that match their profile. 5) When discussing tax implications, be specific to their income bracket. LANGUAGE ADAPTABILITY: Use a conversational, friendly tone and respond in a natural way that feels human-like. Include some personality in your responses, use analogies where appropriate, and vary your sentence structure. When responding in Hindi, use natural conversational Hindi rather than formal language. If critical information is missing, suggest completing the profile first in a friendly, encouraging way that explains the benefits of providing this information.';
     
     // Prepare messages array with system prompt
     const messages = [
@@ -1165,7 +1170,7 @@ async function callMistralAPI(query, context, previousMessages = []) {
             demographicInfo.location.toLowerCase().includes('hyderabad')) {
           locationAnalysis = `The user lives in the metropolitan city ${demographicInfo.location}, where the cost of living is high, so they need a larger emergency fund and higher health insurance coverage.`;
         } else if (demographicInfo.location.toLowerCase().includes('tier 2') || 
-                 demographicInfo.location.toLowerCase().includes('tier ii')) {
+                  demographicInfo.location.toLowerCase().includes('tier ii')) {
           locationAnalysis = `The user lives in a tier 2 city ${demographicInfo.location}, where there may be good opportunities for real estate investment.`;
         }
       }
@@ -1252,7 +1257,7 @@ Provide a DETAILED COMPARISON between direct stock investments and mutual funds 
       systemPrompt += '\n\nIMPORTANT: The user has sent a very short query. Keep your response brief and to the point. Do not provide lengthy explanations. Limit your response to 1-2 sentences.';
     }
     
-    // Make API request with enhanced parameters for more dynamic responses
+    // Make API request with parameters that conform to Mistral API specifications
     const response = await axios.post(
       `${process.env.MISTRAL_API_URL}/chat/completions`,
       {
@@ -1261,9 +1266,7 @@ Provide a DETAILED COMPARISON between direct stock investments and mutual funds 
         temperature: 0.85,        // Increased temperature for more creative responses
         max_tokens: 1000,         // Increased token limit for more comprehensive responses
         top_p: 0.95,              // Nucleus sampling for more diverse text generation
-        presence_penalty: 0.6,    // Reduces repetition by penalizing tokens already present
-        frequency_penalty: 0.5,   // Reduces repetition by penalizing frequent tokens
-        // Removed context as it's not a standard parameter for Mistral API
+        // Removed non-standard parameters that Mistral API doesn't support
       },
       {
         headers: {
@@ -1321,4 +1324,4 @@ Provide a DETAILED COMPARISON between direct stock investments and mutual funds 
       throw new Error(`Failed to get response from AI service: ${error.message}`);
     }
   }
-}
+};
