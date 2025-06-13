@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+  <!-- Background Circle -->
+  <circle cx="32" cy="32" r="30" fill="#4F46E5" />
+  
+  <!-- Letter N stylized as an upward graph/path -->
+  <path d="M18 42V22H22L32 36V22H36V42H32L22 28V42H18Z" fill="white" />
+  
+  <!-- Upward trending line/path symbol -->
+  <path d="M42 38L48 32L42 26" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M24 32H48" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+</svg>
