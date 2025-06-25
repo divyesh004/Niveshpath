@@ -22,7 +22,7 @@ router.post(
   [
     body('query')
       .notEmpty()
-      .withMessage('Query is required')
+      .withMessage('Query is required' )
       .isString()
       .withMessage('Query must be a string')
       .isLength({ min: 2, max: 1000 })
