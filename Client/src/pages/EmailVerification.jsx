@@ -12,7 +12,7 @@ const EmailVerification = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser } = useAuth();
-
+  
   useEffect(() => {
     // Check if we have a token in the URL (user clicked verification link)
     const queryParams = new URLSearchParams(location.search);

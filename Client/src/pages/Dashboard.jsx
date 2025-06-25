@@ -275,7 +275,7 @@ const Dashboard = ({ darkMode, setDarkMode }) => {
                     return 'Good Afternoon';
                   }
                   else if (hours < 20) {
-                    return 'Good Afternoon';
+                    return 'Good Evening';
                   }
                    else {
                     return 'Good Night';

@@ -4,7 +4,8 @@ import apiService from '../services/api';
 import { useAuth } from '../contexts/AuthContext'; // Import Auth Context
 import Onboarding from './Onboarding'; // Import Onboarding component
 import DOMPurify from 'dompurify'; // For sanitizing HTML
-import {  toast } from 'react-toastify';
+import { toast } from 'react-toastify';
+import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
 import MobileNavigation from '../components/MobileNavigation';
 
 const formatBotMessage = (text) => {
@@ -101,6 +102,16 @@ const formatBotMessage = (text) => {
     
     // Build table HTML with enhanced Notion-like styling
     let tableHtml = `<div class="relative overflow-hidden my-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+      <!-- Table Loading State -->
+      <div class="table-loading-state absolute inset-0 flex flex-col items-center justify-center bg-white dark:bg-gray-800 z-10" style="transition: opacity 0.5s ease-out;">
+        <div class="typing-indicator mb-2">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <div class="text-sm text-gray-600 dark:text-gray-300">Preparing table data...</div>
+      </div>
+      
       <!-- Table Toolbar -->
       <div class="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
         <div class="flex items-center space-x-2">
@@ -148,7 +159,7 @@ const formatBotMessage = (text) => {
       
       <!-- Table Content -->
       <div class="overflow-x-auto">
-        <table id="${tableId}" class="min-w-full border-collapse bg-white dark:bg-gray-800 table-fixed md:table-auto">`;
+        <table id="${tableId}" class="min-w-full border-collapse bg-white dark:bg-gray-800 table-fixed md:table-auto" style="opacity: 0; transition: opacity 0.5s ease-in;">`;
     
     // Add header row with improved styling
     tableHtml += '<thead>';
@@ -273,11 +284,59 @@ const formatBotMessage = (text) => {
     });
     tableHtml += '</tbody></table></div>';
     
+    // Add script to handle table loading animation
+    tableHtml += `
+      <script>
+        (function() {
+          // Hide loading state and show table after a short delay
+          setTimeout(() => {
+            const tableElement = document.getElementById('${tableId}');
+            const loadingState = tableElement.parentNode.parentNode.querySelector('.table-loading-state');
+            
+            if (tableElement && loadingState) {
+              // Show table with fade-in effect
+              tableElement.style.opacity = '1';
+              
+              // Hide loading state with fade-out effect
+              loadingState.style.opacity = '0';
+              setTimeout(() => {
+                loadingState.style.display = 'none';
+              }, 500);
+              
+              // Animate rows appearing one by one
+              const rows = tableElement.querySelectorAll('tbody tr');
+              rows.forEach((row, index) => {
+                row.style.display = 'none';
+              });
+              
+              let currentIndex = 0;
+              function showNextRow() {
+                if (currentIndex < rows.length) {
+                  rows[currentIndex].style.display = '';
+                  rows[currentIndex].style.animation = 'fadeIn 0.2s ease-in';
+                  currentIndex++;
+                  setTimeout(showNextRow, 50);
+                }
+              }
+              
+              // Start showing rows after table is visible
+              setTimeout(showNextRow, 300);
+            }
+          }, 800); // Delay before starting animation
+        })();
+      </script>
+    `;
+    
     // Add CSS for compact view toggle and investment cell styling
     tableHtml += `
       <style>
         #${tableId}.compact-table td { padding: 0.5rem 0.75rem; font-size: 0.875rem; }
         #${tableId}.compact-table th { padding: 0.5rem 0.75rem; font-size: 0.75rem; }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
         
         /* Table cell styling */
         .table-cell { width: 100%; }
@@ -329,6 +388,48 @@ const formatBotMessage = (text) => {
       `;
     }
     
+    tableHtml += `
+      <script>
+        (function() {
+          // Hide loading state and show table after a short delay
+          setTimeout(() => {
+            const tableElement = document.getElementById('${tableId}');
+            const loadingState = tableElement.parentNode.parentNode.querySelector('.table-loading-state');
+            
+            if (tableElement && loadingState) {
+              // Show table with fade-in effect
+              tableElement.style.opacity = '1';
+              
+              // Hide loading state with fade-out effect
+              loadingState.style.opacity = '0';
+              setTimeout(() => {
+                loadingState.style.display = 'none';
+              }, 500);
+              
+              // Animate rows appearing one by one
+              const rows = tableElement.querySelectorAll('tbody tr');
+              rows.forEach((row, index) => {
+                row.style.display = 'none';
+              });
+              
+              let currentIndex = 0;
+              function showNextRow() {
+                if (currentIndex < rows.length) {
+                  rows[currentIndex].style.display = '';
+                  rows[currentIndex].style.animation = 'fadeIn 0.2s ease-in';
+                  currentIndex++;
+                  setTimeout(showNextRow, 50);
+                }
+              }
+              
+              // Start showing rows after table is visible
+              setTimeout(showNextRow, 300);
+            }
+          }, 800); // Delay before starting animation
+        })();
+      </script>
+    `;
+    
     tableHtml += '</div>';
     
     return tableHtml;
@@ -354,6 +455,16 @@ const formatBotMessage = (text) => {
     
     // Build table HTML with enhanced Notion-like styling
     let tableHtml = `<div class="relative overflow-hidden my-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+      <!-- Table Loading State -->
+      <div class="table-loading-state absolute inset-0 flex flex-col items-center justify-center bg-white dark:bg-gray-800 z-10" style="transition: opacity 0.5s ease-out;">
+        <div class="typing-indicator mb-2">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <div class="text-sm text-gray-600 dark:text-gray-300">Preparing table data...</div>
+      </div>
+      
       <!-- Table Toolbar -->
       <div class="flex items-center justify-between px-4 py-2 ${isInvestmentData ? 'bg-blue-50 dark:bg-indigo-950' : 'bg-gray-50 dark:bg-gray-900'} border-b border-gray-200 dark:border-gray-700">
         <div class="flex items-center space-x-2">
@@ -410,7 +521,7 @@ const formatBotMessage = (text) => {
       
       <!-- Table Content -->
       <div class="overflow-x-auto">
-        <table id="${tableId}" class="min-w-full border-collapse bg-white dark:bg-gray-800 table-fixed md:table-auto">
+        <table id="${tableId}" class="min-w-full border-collapse bg-white dark:bg-gray-800 table-fixed md:table-auto" style="opacity: 0; transition: opacity 0.5s ease-in;">
     
     <!-- Add all rows as data rows with improved styling -->
     <tbody class="divide-y divide-gray-200 dark:divide-gray-700">`;
@@ -762,7 +873,7 @@ const formatBotMessage = (text) => {
           
           <!-- Table Content -->
           <div class="overflow-x-auto">
-            <table id="${tableId}" class="min-w-full border-collapse bg-white dark:bg-gray-800 table-fixed md:table-auto">`;
+            <table id="${tableId}" class="min-w-full border-collapse bg-white dark:bg-gray-800 table-fixed md:table-auto" style="contain: content; transform: translateZ(0); backface-visibility: hidden;">`;
         
         // Add header row with improved styling
         tableHtml += '<thead>';
@@ -912,7 +1023,7 @@ const formatBotMessage = (text) => {
             #${tableId}.compact-table th { padding: 0.5rem 0.75rem; font-size: 0.75rem; }
             
             /* Investment cell styling */
-            .investment-cell { width: 100%; }
+            .investment-cell { width: 100%; will-change: transform; }
             .investment-cell-content { width: 100%; }
             .investment-cell ul { margin-top: 0.5rem; margin-bottom: 0.5rem; padding-left: 1.5rem; }
             .investment-cell li { margin-bottom: 0.375rem; }
@@ -933,6 +1044,11 @@ const formatBotMessage = (text) => {
           .investment-cell .mt-1\.5 { margin-top: 0.375rem; }
             .investment-cell .mb-1 { margin-bottom: 0.25rem; }
           .investment-cell .mb-1\.5 { margin-bottom: 0.375rem; }
+            
+            /* Optimize table rendering */
+            #${tableId} { contain: content; transform: translateZ(0); }
+            #${tableId} thead { contain: layout; }
+            #${tableId} tbody { contain: layout; }
           </style>
         `;
         
@@ -961,14 +1077,97 @@ const formatBotMessage = (text) => {
           `;
         }
         
+        // Add script for progressive table rendering
+        tableHtml += `
+          <script>
+            (function() {
+              // Progressive rendering for smooth table display
+              const table = document.getElementById('${tableId}');
+              if (table) {
+                // Initial setup - hide table
+                table.style.opacity = '0';
+                table.style.transition = 'opacity 0.3s ease-in';
+                
+                // Get all rows
+                const rows = table.querySelectorAll('tbody tr');
+                const batchSize = 5; // Number of rows to render at once
+                
+                // Hide all rows initially except header
+                rows.forEach(row => {
+                  row.style.display = 'none';
+                });
+                
+                // Show table immediately but with rows hidden
+                setTimeout(() => {
+                  table.style.opacity = '1';
+                  
+                  // Progressive rendering of rows
+                  let currentIndex = 0;
+                  
+                  function renderNextBatch() {
+                    // Show next batch of rows
+                    for (let i = 0; i < batchSize && currentIndex < rows.length; i++) {
+                      if (rows[currentIndex]) {
+                        rows[currentIndex].style.display = '';
+                        rows[currentIndex].style.animation = 'fadeIn 0.2s ease-in';
+                      }
+                      currentIndex++;
+                    }
+                    
+                    // Continue if there are more rows
+                    if (currentIndex < rows.length) {
+                      setTimeout(renderNextBatch, 10);
+                    }
+                  }
+                  
+                  // Start rendering rows
+                  renderNextBatch();
+                }, 50);
+              }
+            })();
+          </script>
+          
+          <style>
+            @keyframes fadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+          </style>
+        `;
+        
         tableHtml += '</div>';
         
         return tableHtml;
       });
     });
     
-    // Return the processed table within the paragraph
-    return `${openTag}${beforeTable}${processedTable}${afterTable}${closeTag}`;
+    // Return the processed table within the paragraph with lazy loading
+  return `${openTag}${beforeTable}<div class="table-container" style="min-height:100px;position:relative;">
+    <div class="table-placeholder" style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.8);dark:background:rgba(30,41,59,0.8);z-index:1;opacity:1;transition:opacity 0.3s ease-out;">
+      <div class="animate-pulse flex space-x-4 w-full max-w-md">
+        <div class="flex-1 space-y-4 py-1">
+          <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+          <div class="space-y-2">
+            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    ${processedTable}
+    <script>
+      (function() {
+        // Hide placeholder after table is loaded
+        setTimeout(() => {
+          const placeholder = document.currentScript.parentNode.querySelector('.table-placeholder');
+          if (placeholder) {
+            placeholder.style.opacity = '0';
+            setTimeout(() => placeholder.style.display = 'none', 300);
+          }
+        }, 300);
+      })();
+    </script>
+  </div>${afterTable}${closeTag}`;
   });
   
   // Process paragraphs (add spacing between paragraphs)
@@ -978,6 +1177,68 @@ const formatBotMessage = (text) => {
   if (!formattedText.startsWith('<')) {
     formattedText = `<p class="text-gray-800 dark:text-gray-200">${formattedText}</p>`;
   }
+  
+  // Add global styles for optimized table rendering
+  formattedText += `
+    <style>
+      /* Global table optimization styles */
+      .table-container { contain: content; }
+      table { contain: content; transform: translateZ(0); }
+      table thead { contain: layout; }
+      table tbody { contain: layout; }
+      table td, table th { contain: content; }
+      
+      /* Smooth animation for table cells */
+      @media (prefers-reduced-motion: no-preference) {
+        table td { transition: background-color 0.2s ease-in-out; }
+      }
+      
+      /* Optimize table rendering */
+      .table-container { will-change: transform; }
+      
+      /* Table loading state styling */
+      .table-loading-state {
+        background-color: rgba(255, 255, 255, 0.9);
+      }
+      
+      .dark .table-loading-state {
+        background-color: rgba(30, 41, 59, 0.9);
+      }
+      
+      /* Typing indicator for table loading */
+      .table-loading-state .typing-indicator {
+        display: flex;
+        align-items: center;
+      }
+      
+      .table-loading-state .typing-indicator span {
+        height: 8px;
+        width: 8px;
+        margin: 0 2px;
+        background-color: #6b7280;
+        border-radius: 50%;
+        display: inline-block;
+        animation: bounce-slow 1.4s infinite ease-in-out both;
+      }
+      
+      .dark .table-loading-state .typing-indicator span {
+        background-color: #9ca3af;
+      }
+      
+      .table-loading-state .typing-indicator span:nth-child(1) {
+        animation-delay: -0.32s;
+      }
+      
+      .table-loading-state .typing-indicator span:nth-child(2) {
+        animation-delay: -0.16s;
+      }
+      
+      @keyframes bounce-slow {
+        0%, 80%, 100% { transform: scale(0); }
+        40% { transform: scale(1); }
+      }
+    </style>
+  `;
   
   // Sanitize the formatted text and return it wrapped in a div with proper styling
   const sanitizedHtml = DOMPurify.sanitize(formattedText);
@@ -1042,209 +1303,103 @@ const formatBotMessage = (text) => {
 //   );
 // };
 
-const Chatbot = ({ darkMode, setDarkMode }) => {
-  const [sessionId, setSessionId] = useState(null); // Ensure sessionId state is here
-  const [showScrollTop, setShowScrollTop] = useState(false); // State to control scroll to top button visibility
-  const inputRef = useRef(null); // Reference for the input field
-
-  // Function to load a chat from history (now inside Chatbot component)
-  const loadChatFromHistory = async (chat) => {
-    try {
-      // First fetch the latest chat history to ensure we have the most up-to-date data
-      await fetchChatHistory();
-    } catch (fetchError) {
-      console.error('Error fetching chat history:', fetchError);
-      // Continue with loading the chat even if fetching history fails
-    }
-    
-    // Ensure chat object and chat.id are present before trying to load
-    if (!chat || !chat.id) {
-      toast.error('Invalid chat data. Cannot load.'); 
-      setMessages([]);
-      setShowWelcome(true);
-      setSessionId(null);
-      sessionStorage.removeItem('niveshpath_session_id'); // Clear session ID from sessionStorage
-      return;
-    }
-
-    try {
-      // Fetch the complete session data from the API
-      let messagesToLoad = [];
-      
-      try {
-        // Get session data from API
-        const sessionResponse = await apiService.chatbot.getChatSession(chat.id);
-        
-        if (sessionResponse && sessionResponse.data && sessionResponse.data.chatSession) {
-          const sessionData = sessionResponse.data.chatSession;
-          
-          // Use messages from the session if available
-          if (sessionData.messages && Array.isArray(sessionData.messages)) {
-            messagesToLoad = sessionData.messages;
-            console.log('Loaded messages from session API:', messagesToLoad.length);
-          }
-        }
-      } catch (sessionError) {
-        console.error('Error fetching session data:', sessionError);
-        // Fallback to chat.messages if API call fails
-        messagesToLoad = (chat.messages && Array.isArray(chat.messages)) ? chat.messages : [];
-        console.log('Using fallback messages from chat history:', messagesToLoad.length);
-      }
-      
-      // If no messages from API, use the ones from chat history as fallback
-      if (messagesToLoad.length === 0) {
-        messagesToLoad = (chat.messages && Array.isArray(chat.messages)) ? chat.messages : [];
-        console.log('No messages from API, using chat history:', messagesToLoad.length);
-      }
-
-      // Format messages for display using messagesToLoad
-      const formattedMessages = messagesToLoad.map((msg, index) => {
-        // Basic validation for message structure
-        if (!msg || (typeof msg.content === 'undefined' && typeof msg.text === 'undefined' && 
-            typeof msg.response === 'undefined' && typeof msg.query === 'undefined')) {
-          console.warn('Message missing content in chat history:', msg);
-          return null;
-        }
-        
-        // Determine if the message is from the bot based on role, sender, or isBot fields
-        const isBot = msg.role === 'assistant' || 
-                     msg.sender === 'bot' || 
-                     msg.isBot === true || 
-                     (typeof msg.response !== 'undefined');
-        
-        // Get the message content from appropriate field
-        // For user messages, prefer query field, for bot messages prefer response field
-        const messageContent = isBot 
-          ? (msg.response || msg.content || msg.text || '') 
-          : (msg.query || msg.content || msg.text || '');
-        
-        // Store the original query for user messages to ensure it's displayed correctly
-        // For bot messages, use the query field if available
-        const originalQuery = !isBot ? (msg.query || msg.content || msg.text || '') : msg.query || null;
-        
-        return {
-          id: `${chat.id}-${index}`, // Simplified ID generation
-          text: messageContent,
-          query: originalQuery, // Add the original query for user messages
-          sender: isBot ? 'bot' : 'user',
-          isBot: isBot,
-          userId: msg.userId || currentUser?.id || 'guest',
-          timestamp: msg.timestamp || new Date().toISOString()
-        };
-      }).filter(msg => msg !== null); // Remove any null messages
-      
-      // Validate that formattedMessages is an array (it should be, due to map and filter)
-      if (!Array.isArray(formattedMessages)) {
-        // This is a safeguard, should not typically be hit.
-        console.error('Formatted messages are not an array after processing.');
-        toast.error('Error processing chat messages.');
-        setMessages([]);
-        setSessionId(chat.id); // Load the session even if messages fail to format
-        setShowWelcome(false); // Show empty chat interface
-        return;
-      }
-
-      // Inform user if the original chat had messages but none were valid for display
-      if (messagesToLoad.length > 0 && formattedMessages.length === 0) {
-        toast.warn('Some messages in this chat could not be displayed.');
-      } else if (messagesToLoad.length === 0 && formattedMessages.length === 0) {
-        // This means the chat history item had no messages to begin with.
-        // toast.info('This chat session is empty.'); // Displaying an empty chat is often better than a toast here.
-      }
-            
-      // Set messages (even if empty, to clear previous chat) and session details
-      if (formattedMessages.length > 0) {
-        const sortedMessages = formattedMessages.sort((a, b) => 
-          new Date(a.timestamp) - new Date(b.timestamp)
-        );
-        // First hide welcome message before setting messages
-        setShowWelcome(false);
-        // Then set messages
-        setMessages(sortedMessages);
-        toast.success(`Chat loaded: ${chat.title || 'Chat'}`);
-      } else {
-        // If there are no messages, show the welcome message
-        setShowWelcome(true);
-        // Then set messages
-        setMessages([]); // Set to empty array if no valid formatted messages
-        toast.info('This chat session has no messages yet.');
-      }
-      
-      // Set the session ID and save it to sessionStorage
-      setSessionId(chat.id);
-      
-      try {
-        sessionStorage.setItem('niveshpath_session_id', chat.id);
-        
-        // Save messages to sessionStorage
-        if (formattedMessages.length > 0) {
-          sessionStorage.setItem('niveshpath_messages', JSON.stringify(formattedMessages));
-        } else {
-          sessionStorage.removeItem('niveshpath_messages');
-        }
-      } catch (storageError) {
-        console.error('Error saving to sessionStorage:', storageError);
-        // Continue with the function even if sessionStorage fails
-      }
-      
-      // Clear input field and any errors
-      setInput('');
-      setError(null);
-      
-      // On mobile, close the sidebar after loading a chat
-      if (isMobile) {
-        setShowSidebar(false);
-      }
-      
-      // Scroll to the bottom of the chat
-      setTimeout(() => {
-        if (messagesEndRef.current) {
-          messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
-        // Double check that welcome message is hidden after a delay
-        setShowWelcome(false);
-      }, 100);
-    } catch (error) {
-      console.error('Error loading or formatting chat messages:', error);
-      // Check if the error is the one we specifically want to handle differently
-      if (error.message === 'No messages found in selected chat') {
-          toast.info('No messages found in the selected chat.');
-      } else {
-          toast.error('Problem loading chat history.');
-      }
-      
-      // Set default welcome message as fallback
-      setShowWelcome(true); // Show welcome message for new chat
-      setMessages([]);
-      setSessionId(null); // Reset session ID as well
-      sessionStorage.removeItem('niveshpath_session_id'); // Clear session ID from sessionStorage
-      }
-  };
+// Function to simulate thinking dots animation
+const ThinkingAnimation = ({ onComplete }) => {
+  const [dots, setDots] = useState('');
+  const [thinkingText, setThinkingText] = useState('');
+  const [phaseIndex, setPhaseIndex] = useState(0);
+  const thinkingPhrases = [
+    'Analyzing your question',
+    'Searching for information',
+    'Processing data',
+    'Considering options',
+    'Formulating detailed response',
+    'Checking facts and figures',
+    'Organizing thoughts',
+    'Gathering investment insights',
+    'Evaluating financial data',
+    'Preparing personalized advice'
+  ];
   
-  const { currentUser, isAuthenticated, onboardingCompleted } = useAuth(); // Get user info and onboarding status
+  useEffect(() => {
+    // Start with a random thinking phrase
+    const randomIndex = Math.floor(Math.random() * thinkingPhrases.length);
+    setPhaseIndex(randomIndex);
+    setThinkingText(thinkingPhrases[randomIndex]);
+    
+    // Animate the dots
+    let count = 0;
+    const dotsInterval = setInterval(() => {
+      setDots('.'.repeat((count % 3) + 1));
+      count++;
+      
+      // Change thinking phrase every 5 counts (1.5 seconds)
+      if (count % 5 === 0) {
+        setPhaseIndex((prevIndex) => {
+          const newIndex = (prevIndex + 1) % thinkingPhrases.length;
+          setThinkingText(thinkingPhrases[newIndex]);
+          return newIndex;
+        });
+      }
+      
+      // Complete the thinking animation after a random time between 2-4 seconds
+      if (count > 10 && Math.random() < 0.15) {
+        clearInterval(dotsInterval);
+        if (onComplete) onComplete();
+      }
+    }, 300);
+    
+    return () => clearInterval(dotsInterval);
+  }, [onComplete]);
+  
+  return (
+    <div className="flex flex-col items-start">
+      <div className="bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary-light text-xs font-medium px-2 py-1 rounded-full mb-2">
+        {thinkingText}
+      </div>
+      <div className="text-gray-800 dark:text-gray-300 font-medium flex items-center">
+        <div className="typing-indicator">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Chatbot = ({ darkMode, setDarkMode }) => {
+  const [sessionId, setSessionId] = useState(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const inputRef = useRef(null);
+  
+  const { currentUser, isAuthenticated, onboardingCompleted } = useAuth();
   const navigate = useNavigate();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
   const [messages, setMessages] = useState([]);
+  const [thinking, setThinking] = useState(false); // New state for thinking animation
+  
+  // State for chat history from API
   const [chatHistory, setChatHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showSidebar, setShowSidebar] = useState(true);
-  const [showHistory, setShowHistory] = useState(true);
-  const [newChat, setNewChat] = useState(false);
   const messagesEndRef = useRef(null);
-  
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
   // Auto-focus the input field when the component mounts or refreshes
   useEffect(() => {
     if (inputRef.current && isAuthenticated && !isTyping && !loading) {
       inputRef.current.focus();
     }
   }, [isAuthenticated, isTyping, loading]);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768); // isMobile state is fine here
 
+  // Handle window resize for mobile detection
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
@@ -1253,7 +1408,7 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Fetch chat history when component mounts or user changes
+  // Initial setup and authentication check
   useEffect(() => {
     // Redirect to login if not authenticated
     if (!isAuthenticated) {
@@ -1261,535 +1416,131 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
       return;
     }
     
-    // Check onboarding status from the backend API
-    const checkOnboardingStatus = async () => {
+    // Check onboarding status and fetch chat history
+    const initializeChat = async () => {
       try {
-        const response = await apiService.user.checkOnboardingStatus();
-        if (response && response.data) {
-          const { isOnboardingCompleted } = response.data;
+        setLoading(true);
+        
+        // Check onboarding status
+        const onboardingResponse = await apiService.user.checkOnboardingStatus();
+        if (onboardingResponse && onboardingResponse.data) {
+          const { isOnboardingCompleted } = onboardingResponse.data;
+          setShowOnboarding(!isOnboardingCompleted);
           
-          // If onboarding is not completed, show the onboarding form
-          if (!isOnboardingCompleted) {
-            setShowOnboarding(true);
-          } else {
-            setShowOnboarding(false);
-            // Fetch chat history only if onboarding is completed
-            fetchChatHistory();
+          // If onboarding is completed, fetch chat history
+          if (isOnboardingCompleted) {
+            await fetchChatHistory();
           }
         }
       } catch (error) {
+        console.error('Error initializing chat:', error);
         // Fallback to context value if API call fails
-        if (!onboardingCompleted) {
-          setShowOnboarding(true);
-        } else {
-          setShowOnboarding(false);
-          // Fetch chat history only if onboarding is completed
-          fetchChatHistory();
+        setShowOnboarding(!onboardingCompleted);
+        if (onboardingCompleted) {
+          await fetchChatHistory();
         }
+      } finally {
+        setLoading(false);
       }
     };
     
-    checkOnboardingStatus();
+    if (isAuthenticated) {
+      initializeChat();
+    }
     
-    // Restore session ID and messages from sessionStorage if available
-    try {
-      const savedSessionId = sessionStorage.getItem('niveshpath_session_id');
-      const savedMessages = sessionStorage.getItem('niveshpath_messages');
-      
-      if (savedSessionId) {
-        setSessionId(savedSessionId);
-        
-        // If we have saved messages, restore them
-        if (savedMessages) {
-          try {
-            const parsedMessages = JSON.parse(savedMessages);
-            if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
-              setMessages(parsedMessages);
-              setShowWelcome(false); // Don't show welcome message if we have messages
-            }
-          } catch (error) {
-            console.error('Error parsing saved messages:', error);
-            // If there's an error parsing messages, clear the saved messages
-            sessionStorage.removeItem('niveshpath_messages');
-            setShowWelcome(true);
-          }
-        } else {
-          setShowWelcome(false); // Don't show welcome message if we have a session
-        }
-      } else {
-        // Show welcome message only for new sessions
-        setShowWelcome(true);
-      }
-    } catch (error) {
-      console.error('Error loading session data from sessionStorage:', error);
-      // Set default state in case of error
+    // Only show welcome message for brand new sessions
+    // This prevents welcome screen from showing after deleting a session
+    const isNewSession = !sessionId && (!messages || messages.length === 0);
+    if (isNewSession) {
       setShowWelcome(true);
+      
+      // Reset messages for a fresh start
       setMessages([]);
+      
+      // Start with no session ID - we'll get one from the API after first message
+      setSessionId(null);
     }
     
   }, [currentUser, isAuthenticated, navigate, onboardingCompleted]);
   
-  // Save sessionId and messages to sessionStorage whenever they change
+  // Hide welcome message when messages exist
   useEffect(() => {
-    try {
-      if (sessionId) {
-        sessionStorage.setItem('niveshpath_session_id', sessionId);
-        
-        // Also save the current messages to sessionStorage
-        if (messages && messages.length > 0) {
-          sessionStorage.setItem('niveshpath_messages', JSON.stringify(messages));
-        }
-      }
-    } catch (error) {
-      console.error('Error saving session data to sessionStorage:', error);
-      // Don't show error toast to avoid disrupting user experience
+    if (messages && messages.length > 0) {
+      setShowWelcome(false);
     }
-  }, [sessionId, messages]);
-  
-  // This useEffect has been replaced with the one using sessionStorage above
+  }, [messages]);
   
   // Handle onboarding completion
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
+    fetchChatHistory(); // Fetch chat history after onboarding is complete
   };
 
-  // Function to fetch chat history from the backend for the current user
+  // Fetch chat history from API
   const fetchChatHistory = async () => {
-    if (!isAuthenticated) return;
-
     try {
-      setLoading(true);
-      setError(null);
-      let actualApiChatSessions = [];
-
-      try {
-        // Authentication is now handled via HTTP-only cookies
-        // and apiService automatically includes withCredentials: true
-
-        const userId = currentUser?.id?.toString().replace(/^:/, '');
-      let response;
-
-      if (userId) {
-        response = await apiService.chatbot.getChatHistory(userId);
-      } else {
-        // According to user, history should only be fetched if userId is present.
-        // If no userId, we should not attempt to fetch general history.
-        setMessages([]);
-        setChatHistory([]);
-        setShowWelcome(true);
-        sessionStorage.removeItem('niveshpath_session_id'); // Clear session ID if no user ID
-        setLoading(false);
-        return;
-        // Fetching general history as userId is not available. This might be empty or not supported by backend for guests.
-        // response = await apiService.chatbot.getHistory(); // This line is now commented out based on new understanding
-      }
-
+      setHistoryLoading(true);
+      const response = await apiService.chatbot.getHistory();
       
-      if (response && response.data) {
-                // Backend's getChatHistory returns { chatHistory: [], totalPages: X, currentPage: Y }
-        // Backend's getHistory (general) might return a flat array or similar structure.
-        if (response.data.chatHistory && Array.isArray(response.data.chatHistory)) {
-          actualApiChatSessions = response.data.chatHistory;
-                  } else if (Array.isArray(response.data)) { // Fallback for flat array responses (e.g., from general getHistory if it were called)
-          actualApiChatSessions = response.data;
-                  } else {
-          console.warn("API response data is not in a recognized array format. Received:", response.data);
-          actualApiChatSessions = [];
-        }
-      } else {
-        console.warn("No data in API response or response is undefined.");
-        actualApiChatSessions = [];
-      }
-
-      
-      if (actualApiChatSessions.length === 0) {
-                setMessages([]); // Clear current messages if no history
-        setChatHistory([]);
-        setShowWelcome(true); // Show welcome message if no history and no current chat
-        setLoading(false);
-        return;
-      }
-
-      // Process API data: backend returns sessions, each containing messages
-      const processedHistory = actualApiChatSessions.map(session => {
-        // Make sure we're using the MongoDB _id as the sessionId for API calls
-        const mongoId = session._id;
-        if (!mongoId) {
-          console.warn("Skipping session due to missing MongoDB _id:", session);
-          return null; // Skip if no MongoDB _id
-        }
+      if (response && response.data && response.data.chatHistory) {
+        // Process the chat history to extract relevant information
+        const processedHistory = response.data.chatHistory.map(session => ({
+          _id: session._id,
+          id: session._id,
+          title: session.messages && session.messages.length > 0 
+            ? session.messages[0].query.substring(0, 30) + (session.messages[0].query.length > 30 ? '...' : '')
+            : 'Chat Session',
+          timestamp: session.timestamp,
+          createdAt: session.timestamp,
+          conversationId: session.conversationId
+        }));
         
-        // Use a consistent ID for local reference
-        const sessionId = session.sessionId || mongoId;
-        
-        let title = '';
-        // Check if the session object itself has a 'query' field from the backend.
-        if (session.query && typeof session.query === 'string' && session.query.trim() !== '') {
-          const queryText = session.query.trim();
-          title = queryText.substring(0, 60) + (queryText.length > 60 ? "..." : "");
-        } else if (session.messages && session.messages.length > 0) {
-          // If no session.query, try to get it from the first user message.
-          const firstUserMessage = session.messages.find(m => m.role === 'user');
-          if (firstUserMessage && firstUserMessage.content && typeof firstUserMessage.content === 'string' && firstUserMessage.content.trim() !== '') {
-            const queryText = firstUserMessage.content.trim();
-            title = queryText.substring(0, 60) + (queryText.length > 60 ? "..." : "");
-          }
-        }
-
-        // If no title could be derived from session.query or the first user message, generate a default one.
-        if (!title) {
-          title = `Chat Session - ${new Date(session.updatedAt || session.createdAt || Date.now()).toLocaleDateString()}`;
-        }
-        
-        const date = session.updatedAt || session.createdAt || new Date().toISOString();
-        const sessionUserId = session.userId;
-
-        let messagesInSession = [];
-        if (session.messages && Array.isArray(session.messages)) {
-          messagesInSession = session.messages.map(msg => ({
-            id: msg._id || `msg-${Date.now()}-${Math.random()}`,
-            text: msg.content || msg.text || "", // Ensure text is always a string
-            sender: msg.role === 'user' ? 'user' : 'bot',
-            timestamp: msg.timestamp || msg.createdAt || date, // Use session date if message timestamp missing
-          })).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)); // Sort messages within session
-        }
-        
-        return {
-          id: sessionId, // Local reference ID
-          sessionId: mongoId, // Store the original MongoDB _id for API calls
-          title: title,
-          date: date, // Store raw date for sorting, format for display later
-          messages: messagesInSession,
-          userId: sessionUserId
-        };
-      }).filter(Boolean) // Remove nulls from skipped sessions
-        .sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort history by date, newest first
-
-      
-      if (processedHistory.length > 0) {
         setChatHistory(processedHistory);
-        
-        try {
-          // Check if we have a saved session ID in sessionStorage
-          const savedSessionId = sessionStorage.getItem('niveshpath_session_id');
-          
-          if (savedSessionId) {
-            // Find the chat with the matching ID
-            const savedChat = processedHistory.find(chat => chat.id === savedSessionId);
-            
-            if (savedChat) {
-              // Load the saved chat
-              // Restoring chat session from localStorage
-              
-              if (savedChat.messages && savedChat.messages.length > 0) {
-                setMessages(savedChat.messages);
-                setShowWelcome(false);
-              } else {
-                setMessages([]);
-                setShowWelcome(true);
-              }
-            } else {  
-              // If the saved session ID doesn't match any chat, show welcome
-              if (messages.length === 0) { // Only show welcome if no active chat is loaded
-                setShowWelcome(true);
-              }
-            }
-          } else {
-            // If no saved session ID, show welcome if no messages
-            if (messages.length === 0) { // Only show welcome if no active chat is loaded
-              setShowWelcome(true);
-            }
-          }
-        } catch (storageError) {
-          console.error('Error accessing sessionStorage:', storageError);
-          // Set default state in case of error
-          if (messages.length === 0) {
-            setShowWelcome(true);
-          }
-        }
       } else {
-        setMessages([]);
+        // Fallback to empty array if response format is unexpected
         setChatHistory([]);
-        setShowWelcome(true);
-        try {
-          sessionStorage.removeItem('niveshpath_session_id'); // Clear session ID if no history
-        } catch (storageError) {
-          console.error('Error removing session ID from sessionStorage:', storageError);
-          // Continue even if sessionStorage fails
-        }
       }
-      } catch (innerError) {
-        console.error('Error processing chat history data:', innerError);
-        // Handle inner try-catch errors
+    } catch (error) {
+      console.error('Error fetching chat history:', error);
+      toast.error('Failed to load chat history');
+      setChatHistory([]); // Reset to empty array on error
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+  
+
+  
+  // Delete a chat session
+  const deleteSession = async (sessionIdToDelete, e) => {
+    // Prevent event propagation to avoid loading the session when deleting
+    e.stopPropagation();
+    
+    if (!sessionIdToDelete) return;
+    
+    try {
+      setHistoryLoading(true);
+      await apiService.chatbot.deleteSession(sessionIdToDelete);
+      
+      // Remove the deleted session from chat history
+      setChatHistory(prevHistory => prevHistory.filter(session => 
+        (session.id !== sessionIdToDelete && session._id !== sessionIdToDelete)
+      ));
+      
+      // If the current active session is deleted, clear messages but don't show welcome screen
+      if (sessionIdToDelete === sessionId) {
         setMessages([]);
-        setChatHistory([]);
-        setShowWelcome(true);
-      }
-
-    } catch (err) {
-      console.error("Error fetching/processing chat history from API:", err);
-      setError(err.message || "Failed to load chat history from server.");
-      toast.error(err.message || "Failed to load chat history from server. No cache fallback.");
-      setMessages([]);
-      setChatHistory([]);
-      setShowWelcome(true);
-      try {
-        sessionStorage.removeItem('niveshpath_session_id'); // Clear session ID if error occurs
-      } catch (storageError) {
-        console.error('Error removing session ID from sessionStorage:', storageError);
-        // Continue even if sessionStorage fails
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-
-  
-  // Function to delete a specific chat from history
-  const deleteChat = async (chatId, event) => {
-    event.stopPropagation(); // Prevent triggering the parent button click
-
-    if (!isAuthenticated) {
-      toast.info('Please login to manage chat history');
-      navigate('/login');
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      // Find the chat to be deleted BEFORE any modifications
-      const chatToDelete = chatHistory.find(chat => chat.id === chatId);
-
-      if (!chatToDelete) {
-        toast.error("Could not find the chat to delete.");
-        setLoading(false);
-        return;
-      }
-
-      // If user is authenticated, delete from server too
-      if (currentUser?.id) {
-        try {
-          // Check if chatId is a valid MongoDB ObjectId (24 character hex string)
-          // If not, try to get the sessionId from the chat object
-          const sessionId = chatToDelete.sessionId || chatId;
-          
-          if (!sessionId) {
-            throw new Error('No valid sessionId found for deletion');
-          }
-          
-          // Make sure we're using the correct sessionId for the API call
-          const response = await apiService.chatbot.deleteSession(sessionId);
-          
-          if (response && response.message) {
-            toast.success(response.message || 'Chat successfully deleted from server');
-          } else {
-            toast.success('Chat successfully deleted from server');
-          }
-        } catch (apiError) {
-          console.error('Error deleting chat from server:', apiError);
-          toast.error('Problem deleting chat from server. It will be removed locally.');
-          // Continue with local deletion even if server deletion fails (current behavior)
-        }
-      }
-
-      // Remove chat from local state
-      const updatedHistory = chatHistory.filter(chat => chat.id !== chatId);
-      setChatHistory(updatedHistory);
-
-      // If unauthenticated, show a success message for local deletion
-      if (!currentUser?.id) {
-        toast.success('Chat successfully deleted locally');
-      }
-
-      // Check if the deleted chat was the active one and reset messages
-      // Use chatToDelete which was captured before history was modified
-      if (messages.length > 0 && chatToDelete.messages && chatToDelete.messages.length > 0) {
-        const currentFirstMsgContent = messages[0]?.text || messages[0]?.content;
-        const deletedFirstMsgContent = chatToDelete.messages[0]?.text || chatToDelete.messages[0]?.content;
-
-        // This comparison is based on current logic. If an activeChatId state exists,
-        // comparing activeChatId === chatId would be more robust.
-        if (currentFirstMsgContent === deletedFirstMsgContent) {
-          // Resetting current chat to welcome message or clearing it
-          if (typeof welcomeMessage !== 'undefined') {
-            setMessages([welcomeMessage]); // Assumes welcomeMessage is a single message object
-          } else {
-            setMessages([]); // Fallback: clear messages
-            console.warn("welcomeMessage is not defined in Chatbot.jsx. Clearing messages instead.");
-          }
-          // Clear session ID and messages from sessionStorage if the deleted chat was the active one
-          setSessionId(null);
-          try {
-            sessionStorage.removeItem('niveshpath_session_id');
-            sessionStorage.removeItem('niveshpath_messages');
-          } catch (storageError) {
-            console.error('Error clearing sessionStorage:', storageError);
-            // Continue execution without disrupting the flow
-          }
-        }
+        setSessionId(null);
+        // Explicitly set showWelcome to false to prevent welcome page from showing
+        setShowWelcome(false);
       }
       
-      // If the deleted chat ID matches the current session ID, clear it and messages
-      try {
-        const savedSessionId = sessionStorage.getItem('niveshpath_session_id');
-        if (savedSessionId === chatId) {
-          setSessionId(null);
-          sessionStorage.removeItem('niveshpath_session_id');
-          sessionStorage.removeItem('niveshpath_messages');
-        }
-      } catch (storageError) {
-        console.error('Error accessing or clearing sessionStorage:', storageError);
-        // Continue execution without disrupting the flow
-      }
-      // No localStorage updates needed
+      toast.success('Chat session deleted successfully');
     } catch (error) {
-      console.error('Error in deleteChat function:', error);
-      toast.error('Failed to delete chat. Please try again.');
+      console.error('Error deleting chat session:', error);
+      toast.error('Failed to delete chat session');
     } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Function to clear chat history
-  const clearChat = async () => {
-    if (!isAuthenticated) {
-      toast.info('Please login to manage chat history');
-      navigate('/login');
-      return;
-    }
-    
-    try {
-      setLoading(true);
-      // Clearing all chat history
-      
-      // If user is authenticated, clear from server too
-      if (currentUser?.id) {
-        try {
-          await apiService.chatbot.clearAllChats(currentUser.id);
-          toast.success('Chat history successfully cleared from server');
-        } catch (apiError) {
-          console.error('Error clearing chat history from server:', apiError);
-          toast.error('Problem clearing chat history from server');
-          // Continue with local deletion even if server deletion fails
-        }
-      }
-      
-      // Reset messages and show welcome message
-      setMessages([]);
-      setShowWelcome(true);
-      
-      // Clear session ID and messages from sessionStorage
-      setSessionId(null);
-      try {
-        sessionStorage.removeItem('niveshpath_session_id');
-        sessionStorage.removeItem('niveshpath_messages');
-      } catch (storageError) {
-        console.error('Error clearing sessionStorage:', storageError);
-        // Continue execution without disrupting the flow
-      }
-      
-      // Create a default chat entry after clearing
-      const defaultChat = {
-        id: 1,
-        title: 'New Financial Chat',
-        date: new Date().toLocaleDateString(),
-        messages: [],
-        userId: currentUser?.id || 'guest'
-      };
-      
-      // Update state with the default chat
-      setChatHistory([defaultChat]);
-      
-      // Show success message if not already shown
-      if (!currentUser?.id) {
-        toast.success('Chat history successfully cleared');
-      }
-      
-      setInput('');
-      setError(null);
-      setNewChat(true);
-      toast.success('Chat history successfully cleared');
-    } catch (error) {
-      console.error('Error in clearChat function:', error);
-      toast.error('Failed to clear chat history. Please try again.');
-
-      
-      // Set default welcome message as fallback
-      // setMessages([welcomeMessage]);
-      // setShowWelcome(true); // Show welcome message for new chat
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Function to start a new chat
-  const startNewChat = () => {
-    if (!isAuthenticated) {
-      toast.info('Please login to start a new chat');
-      navigate('/login');
-      return;
-    }
-    
-    // Starting a new chat
-    
-    // Set flag to indicate this is a new page/conversation
-    try {
-      sessionStorage.setItem('isNewPageNavigation', 'true');
-      // Clear any existing conversation ID
-      sessionStorage.removeItem('currentConversationId');
-    } catch (storageError) {
-      console.error('Error setting sessionStorage flags:', storageError);
-      // Continue execution without disrupting the flow
-    }
-    
-    // Reset messages and show welcome message
-    setMessages([]);
-    setShowWelcome(true); // Show welcome message for new chat
-    
-    // Reset input and error state
-    setInput('');
-    setError(null);
-    setNewChat(true);
-    
-    // Generate a unique ID for the new chat
-    const newChatId = chatHistory.length > 0 ? 
-      Math.max(...chatHistory.map(chat => chat.id)) + 1 : 1;
-      
-    // Set the new session ID
-    setSessionId(newChatId.toString());
-    try {
-      sessionStorage.setItem('niveshpath_session_id', newChatId.toString());
-      
-      // Clear saved messages from sessionStorage
-      sessionStorage.removeItem('niveshpath_messages');
-    } catch (storageError) {
-      console.error('Error updating sessionStorage in new chat:', storageError);
-      // Continue execution without disrupting the flow
-    }
-    
-    // Add new chat to history with user ID
-    const newChatEntry = {
-      id: newChatId,
-      title: 'New Financial Chat',
-      date: new Date().toLocaleDateString(),
-      messages: [],
-      userId: currentUser?.id || 'guest' // Add user ID to new chat
-    };
-    
-    // Show success message
-    toast.success('New chat successfully started');
-    
-    // Add new chat to the beginning of the history array
-    const updatedHistory = [newChatEntry, ...chatHistory];
-    
-    // Update chat history with new chat
-    setChatHistory(updatedHistory);
-    
-    // Close sidebar on mobile after starting new chat
-    if (isMobile) {
-      setShowSidebar(false);
+      setHistoryLoading(false);
     }
   };
 
@@ -1802,171 +1553,315 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
       setShowWelcome(false);
     }
     
-    // Check if user has completed onboarding - only check once per session
-    try {
-      const hasCheckedOnboarding = sessionStorage.getItem('onboardingChecked');
-      
-      if (!hasCheckedOnboarding && !onboardingCompleted) {
-        setShowOnboarding(true);
-        sessionStorage.setItem('onboardingChecked', 'true');
-        return;
-      }
-    } catch (storageError) {
-      console.error('Error checking onboarding status in sessionStorage:', storageError);
-      // Continue execution without disrupting the flow
+    // Check if user has completed onboarding
+    if (!onboardingCompleted) {
+      setShowOnboarding(true);
+      return;
     }
     
     // Clear any previous errors
     setError(null);
 
-    // Add user message
-    const userMessage = { id: Date.now(), text: input, isBot: false };
-    setMessages(prevMessages => {
-      const updated = [...prevMessages, userMessage];
-      return updated;
-    });
+    // Create user message
+    const userMessage = { id: Date.now(), text: input, isBot: false, sender: 'user' };
+    const userInput = input.trim(); // Store input before clearing
     
-    setInput(''); // Clear input after sending
-    setIsTyping(true);
+    // Immediately update UI with user message
+    setMessages(prevMessages => [...prevMessages, userMessage]);
+    setInput(''); // Clear input field immediately
+    setIsTyping(true); // Show typing indicator immediately
+    setLoading(true); // Set loading state
     
-    // Scroll to user's message immediately
-    setTimeout(() => {
-      scrollToLatestQuestion();
-    }, 100);
+    // Scroll to bottom immediately after adding user message
+    scrollToLatestQuestion();
     
     try {
-      // Send message to backend API
-      // Use the input from the userMessage, as 'input' state is cleared
-      const currentInput = userMessage.text;
+      // Only use sessionId as conversationId if it exists and is a valid MongoDB ObjectId
+      // MongoDB ObjectIds are 24 character hex strings
+      let currentConversationId = sessionId && /^[0-9a-fA-F]{24}$/.test(sessionId) ? sessionId : null;
+      let isNewPage = false; // We're not tracking page navigation without session storage
       
-      // Get current conversationId if it exists in the current chat session
-      let currentConversationId = null;
-      let isNewPage = false;
+      // Try to send message to API with timeout to prevent long-hanging requests
+      const controller = new AbortController(); 
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
       
       try {
-        if (messages.length > 0 && sessionStorage.getItem('currentConversationId')) {
-          currentConversationId = sessionStorage.getItem('currentConversationId');
-        }
+        const response = await apiService.chatbot.sendMessage(
+          userInput, 
+          currentConversationId,
+          isNewPage
+        );
         
-        // Check if this is a new page navigation (based on a flag we'll set when navigating)
-        isNewPage = sessionStorage.getItem('isNewPageNavigation') === 'true';
-      } catch (storageError) {
-        console.error('Error getting conversation data from sessionStorage:', storageError);
-        // Continue execution without disrupting the flow
-      }
-      
-      // Send message with appropriate parameters
-      const response = await apiService.chatbot.sendMessage(
-        currentInput.trim(), 
-        currentConversationId,
-        isNewPage
-      );
-      
-      // Store the conversationId for future messages on this page
-      try {
+        clearTimeout(timeoutId); // Clear the timeout if request succeeds
+        
+        // Store the conversationId in our state for future messages
         if (response.data && response.data.conversationId) {
-          sessionStorage.setItem('currentConversationId', response.data.conversationId);
+          setSessionId(response.data.conversationId);
         }
         
-        // Reset the new page navigation flag
-        if (isNewPage) {
-          sessionStorage.removeItem('isNewPageNavigation');
-        }
-      } catch (storageError) {
-        console.error('Error updating conversation data in sessionStorage:', storageError);
-        // Continue execution without disrupting the flow
-      }
-      
-      // Process the response from the API
-      if (response.data && response.data.response) {
-        const botMessage = { 
-          id: Date.now() + 1, // Ensure unique ID
-          text: response.data.response, 
-          isBot: true,
-          query: currentInput.trim() // Set query field to user's input
-        };
-        
-        setMessages(prevMessages => {
-          const updated = [...prevMessages, botMessage];
-
-          // Update chat history using the 'updated' messages array
-          setChatHistory(prevChatHistory => {
-            let newHistoryState = [...prevChatHistory];
-            let wasNewChatProcessed = false;
-
-            if (newHistoryState.length > 0) {
-              const currentChat = { ...newHistoryState[0] }; // Work on a copy
-              currentChat.messages = updated; // 'updated' is the full list [UserQuery, BotResponse]
-
-              if (newChat) { // 'newChat' is from the outer scope of handleSubmit
-                currentChat.title = userMessage.text.length > 20 ? userMessage.text.substring(0, 20) + '...' : userMessage.text;
-                wasNewChatProcessed = true; // Mark that we handled the newChat logic
-              }
-              newHistoryState[0] = currentChat;
-            }
-            // If newHistoryState was empty, it remains empty. This assumes startNewChat correctly initializes history.
-            
-            if (wasNewChatProcessed) {
-              setNewChat(false); // Update newChat state here, based on processing within this update
-            }
-            return newHistoryState;
+        // Process the response
+        if (response.data && response.data.response) {
+          // First show thinking animation
+          setThinking(true);
+          
+          // Create bot message with thinking state initially
+          const botMessage = { 
+            id: Date.now(), // Ensure unique ID
+            text: '', // Start with empty text
+            isBot: true,
+            sender: 'bot',
+            query: userInput, // Store original query
+            fullText: response.data.response, // Store the full response
+            thinking: true // Show thinking animation
+          };
+          
+          // Add the bot message with thinking state to the messages array
+          setMessages(prevMessages => {
+            return [...prevMessages, botMessage];
           });
-          return updated;
-        });
-        
-        // Scroll to the bot's response after it's received
-        setTimeout(() => {
-          scrollToLatestQuestion();
-          // Additional fallback to ensure scrolling works
-          if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+          
+          // Simulate thinking for a random time between 1-3 seconds
+          const thinkingTime = Math.random() * 2000 + 1000;
+          await new Promise(resolve => setTimeout(resolve, thinkingTime));
+          
+          // Update message to show it's no longer thinking but now typing
+          setMessages(prevMessages => {
+            const updatedMessages = [...prevMessages];
+            const lastMessageIndex = updatedMessages.length - 1;
+            
+            if (lastMessageIndex >= 0 && updatedMessages[lastMessageIndex].id === botMessage.id) {
+              updatedMessages[lastMessageIndex] = {
+                ...updatedMessages[lastMessageIndex],
+                thinking: false,
+                typing: true
+              };
+            }
+            
+            return updatedMessages;
+          });
+          
+          setThinking(false);
+          
+          // Gradually reveal the text character by character
+          const fullText = response.data.response;
+          let currentText = '';
+          
+          for (let i = 0; i < fullText.length; i++) {
+            // Add one character at a time
+            currentText += fullText[i];
+            
+            // Update the message with the current text
+            setMessages(prevMessages => {
+              const updatedMessages = [...prevMessages];
+              const lastMessageIndex = updatedMessages.length - 1;
+              
+              // Only update if the last message is the bot message we're working with
+              if (lastMessageIndex >= 0 && updatedMessages[lastMessageIndex].id === botMessage.id) {
+                updatedMessages[lastMessageIndex] = {
+                  ...updatedMessages[lastMessageIndex],
+                  text: currentText,
+                  typing: i < fullText.length - 1 // Still typing until the last character
+                };
+              }
+              
+              return updatedMessages;
+            });
+            
+            // Add a small delay between characters (adjust for speed)
+            // Use different delays for different characters to make it more natural
+            const delay = fullText[i] === '.' || fullText[i] === '!' || fullText[i] === '?' ? 100 : 
+                         fullText[i] === ',' || fullText[i] === ';' ? 50 : 
+                         fullText[i] === '\n' ? 150 : Math.random() * 10 + 5;
+            
+            await new Promise(resolve => setTimeout(resolve, delay));
           }
-        }, 300); // Adjusted timeout to ensure DOM is fully updated
-      } else {
-        // Fallback in case the API response format is unexpected
-        throw new Error('Unexpected response format from server');
+          
+          // Update chat history after successful message exchange
+          // Adding a small delay before fetching chat history to ensure server has processed the message
+          setTimeout(() => {
+            fetchChatHistory();
+          }, 500); // 500ms delay
+          
+          // Don't scroll to the bot's response to keep user's current reading position
+          // scrollToLatestQuestion(); - removed to prevent auto-scrolling after AI response
+        } else {
+          throw new Error('Unexpected response format from server');
+        }
+      } catch (apiError) {
+        clearTimeout(timeoutId); // Clear the timeout if request fails
+        
+        console.error('Error sending message to chatbot:', apiError);
+        
+        // Check if it's a server error (500)
+        const isServerError = apiError.response && apiError.response.status >= 500;
+        
+        // Generate a fallback response for server errors
+        if (isServerError) {
+          // Generate a fallback response based on user input
+          let fallbackResponse = "I'm sorry, but I'm having trouble connecting to my knowledge base right now. Please try again in a few moments.";
+          
+          // Add some variety based on user input
+          if (userInput.toLowerCase().includes('hello') || userInput.toLowerCase().includes('hi')) {
+            fallbackResponse = "Hello! I'd love to help you with your financial questions, but I'm having trouble connecting to my knowledge base right now. Please try again in a few moments.";
+          } else if (userInput.toLowerCase().includes('invest')) {
+            fallbackResponse = "I'd like to provide you with investment advice, but I'm having trouble accessing my financial data at the moment. Please try again shortly.";
+          } else if (userInput.toLowerCase().includes('budget')) {
+            fallbackResponse = "Budgeting is important for financial health. I'd like to help you with this, but I'm experiencing some technical difficulties. Please try again soon.";
+          } else if (userInput.toLowerCase().includes('sip')) {
+            fallbackResponse = "SIPs are a great investment strategy. I'd like to tell you more, but I'm having trouble connecting to my financial database. Please try again in a few moments.";
+          } else if (userInput.toLowerCase().includes('tax')) {
+            fallbackResponse = "Tax planning is an important aspect of financial management. I'd like to provide you with more information, but I'm experiencing some technical difficulties. Please try again shortly.";
+          }
+          
+          // Create bot message with fallback response
+          const fallbackMessage = { 
+            id: Date.now(), 
+            text: fallbackResponse, 
+            isBot: true,
+            sender: 'bot',
+            query: userInput,
+            isFallback: true // Mark as fallback response
+          };
+          
+          setMessages(prevMessages => {
+            const updatedMessages = [...prevMessages, fallbackMessage];
+            return updatedMessages;
+          });
+          
+          // Show a toast with a more specific error message
+          toast.error('Server is currently unavailable. Using fallback responses.');
+        } else {
+          // For other errors, show the standard error message
+          throw apiError; // Re-throw to be caught by the outer catch block
+        }
       }
     } catch (error) {
-      console.error('Error sending message to chatbot:', error);
+      console.error('Error in chat submission:', error);
       setError('Failed to get a response. Please try again.');
       toast.error('Failed to get a response. Please try again.');
       
-      // Add a fallback bot message
+      // Add error message
       const errorMessage = { 
-        id: Date.now() + 1, // Ensure unique ID
+        id: Date.now(), 
         text: 'Sorry, I encountered an error processing your request. Please try again later.', 
-        isBot: true 
+        isBot: true,
+        sender: 'bot'
       };
-      setMessages(prevMessages => {
-        const updated = [...prevMessages, errorMessage];
-        return updated;
-      });
       
-      // Ensure scrolling to error message
-      setTimeout(() => {
-        scrollToLatestQuestion();
-        // Additional fallback to ensure scrolling works
-        if (messagesEndRef.current) {
-          messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
-      }, 300);
+      setMessages(prevMessages => [...prevMessages, errorMessage]);
+      // Don't scroll to error message to keep user's current reading position
+      // scrollToLatestQuestion(); - removed to prevent auto-scrolling after error message
     } finally {
       setIsTyping(false);
+      setLoading(false);
     }
   };
+  
+  // Load a specific chat session
+  const loadChatSession = async (sessionId) => {
+    if (!sessionId) return;
+    
+    try {
+      setLoading(true);
+      const response = await apiService.chatbot.getChatSession(sessionId);
+      
+      if (response && response.data && response.data.chatSession) {
+        const session = response.data.chatSession;
+        
+        // Check if session has messages
+        if (session.messages && session.messages.length > 0) {
+          // Format messages for display
+          const formattedMessages = session.messages.map(msg => ({
+            id: msg._id || Date.now(),
+            text: msg.response, // Use response as the bot message text
+            query: msg.query,   // Store the original query
+            isBot: true,        // This is a bot message
+            sender: 'bot',
+            timestamp: msg.timestamp || new Date().toISOString()
+          }));
+          
+          // Add user messages based on queries
+          const completeMessages = [];
+          
+          formattedMessages.forEach(botMsg => {
+            // Add the user message first (based on query)
+            completeMessages.push({
+              id: `user-${botMsg.id}`,
+              text: botMsg.query,
+              isBot: false,
+              sender: 'user',
+              timestamp: botMsg.timestamp
+            });
+            
+            // Then add the bot response
+            completeMessages.push({
+              ...botMsg,
+              id: `bot-${botMsg.id}`
+            });
+          });
+          
+          // Update state
+          setMessages(completeMessages);
+          setSessionId(session.conversationId || sessionId);
+          setShowWelcome(false);
+          
+          // Scroll to bottom after loading messages - this is intentional for session loading
+          // We keep this scroll behavior when loading a past session
+          setTimeout(() => {
+            // Find the last message (bot or user)
+            if (completeMessages.length > 0) {
+              const lastMessage = completeMessages[completeMessages.length - 1];
+              const element = document.getElementById(`message-${lastMessage.id}`);
+              if (element) {
+                // Use 'auto' instead of 'smooth' for immediate scrolling
+                element.scrollIntoView({ behavior: 'auto', block: 'start' });
+              } else if (messagesEndRef.current) {
+                messagesEndRef.current.scrollIntoView({ behavior: 'auto' });
+              }
+            }
+          }, 100);
+        } else {
+          toast.warning('This chat session has no messages');
+          setMessages([]);
+          setSessionId(session.conversationId || sessionId);
+        }
+      } else {
+        toast.error('Invalid session data received');
+      }
+    } catch (error) {
+      console.error('Error loading chat session:', error);
+      toast.error('Failed to load chat session');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Start a new chat session
+  const startNewChat = () => {
+    setMessages([]);
+    setSessionId(null); // Don't set a sessionId until we get one from the API
+    setShowWelcome(true);
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
+  
+  // Chat history functionality removed as requested
 
-  // Function to scroll to the latest message (bot or user)
+  // Function to scroll to the latest message (primarily for user messages)
   const scrollToLatestQuestion = () => {
-    // Find the last message (bot or user)
+    // Find the last message
     if (messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
-      const element = document.getElementById(`message-${lastMessage.id}`);
-      if (element) {
-        // Scroll to the latest message and keep it in view
-        element.scrollIntoView({ behavior: 'smooth', block: 'end' });
-      } else {
-        // Fallback to messagesEndRef if element not found
-        if (messagesEndRef.current) {
+      // Only scroll if it's a user message or if explicitly requested
+      // This prevents auto-scrolling when AI responds
+      if (!lastMessage.isBot) {
+        const element = document.getElementById(`message-${lastMessage.id}`);
+        if (element) {
+          // Scroll to the latest message and keep it in view
+          element.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        } else if (messagesEndRef.current) {
+          // Fallback to messagesEndRef if element not found
           messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
       }
@@ -1976,10 +1871,11 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
     }
   };
   
-  // Auto-scroll when new messages are added or typing indicator changes
+  // Auto-scroll only when user sends a message, not when AI responds
   useEffect(() => {
-    // Auto-scroll for any new message or when typing indicator changes
-    if (messages.length > 0 || isTyping) {
+    // Only auto-scroll when typing indicator is active (user just sent a message)
+    // or when there's only one message (first message in conversation)
+    if (isTyping || messages.length === 1) {
       // Small delay to ensure DOM is updated
       setTimeout(() => {
         // Try to scroll to the latest message first
@@ -1990,7 +1886,8 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
         }
       }, 100);
     }
-  }, [messages, isTyping]);
+    // Don't auto-scroll when AI responds (when isTyping changes from true to false)
+  }, [isTyping, messages.length]);
   
   // Handle pressing Enter key to submit
   const handleKeyDown = (e) => {
@@ -2085,8 +1982,8 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
           </button>
         </div>
         
-        {/* Chat History - Enhanced modern style */}
-        <div className={`flex-1 overflow-y-auto px-3 py-2 ${showHistory ? 'block' : 'hidden'}`}>
+        {/* Chat History - Dynamic from API */}
+        <div className="flex-1 overflow-y-auto px-3 py-2">
           <div className="flex items-center justify-between mb-3 bg-gray-50 dark:bg-gray-700 p-2 rounded-lg">
             <h3 className="text-xs uppercase text-gray-700 dark:text-gray-300 font-semibold px-1 tracking-wider flex items-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-primary dark:text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2095,66 +1992,78 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
               Chat History
             </h3>
             <button 
-              onClick={() => setShowHistory(!showHistory)}
-              className="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 dark:focus:ring-secondary/50"
-              title={showHistory ? 'Hide History' : 'Show History'}
+              onClick={fetchChatHistory}  
+              className="p-1 rounded-md text-gray-500 hover:text-primary dark:hover:text-secondary hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 dark:focus:ring-secondary/50"
+              title="Refresh history"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 transition-transform duration-200 text-primary dark:text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ transform: showHistory ? 'rotate(0deg)' : 'rotate(-90deg)' }}>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </button>
           </div>
-          {!isAuthenticated ? (
-            <div className="text-center p-3 text-sm text-gray-800 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
-              <p>Please login to view your chat history</p>
-              <Link to="/login" className="text-blue-600 dark:text-blue-400 hover:underline mt-2 block">Login</Link>
+          
+          {historyLoading ? (
+            <div className="text-center p-4">
+              <div className="inline-block animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-primary dark:border-secondary"></div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">Loading history...</p>
             </div>
-          ) : loading ? (
-            <div className="text-center p-3 text-sm text-gray-800 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
-              <p>Loading chat history...</p>
-              <div className="loader mt-2 mx-auto"></div>
-            </div>
-          ) : chatHistory && chatHistory.length === 0 ? (
-            <div className="text-center p-3 text-sm text-gray-800 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
-              <p>No chat history found</p>
-              <button 
-                onClick={startNewChat}
-                className="text-blue-600 dark:text-blue-400 hover:underline mt-2 block mx-auto"
-              >
-                Start a new chat
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {/* Filter chats to only show current user's chats */}
-              {chatHistory && Array.isArray(chatHistory) && chatHistory
-                .filter(chat => !chat.userId || chat.userId === (currentUser?.id || 'guest'))
-                .map(chat => (
-                <div key={chat.id} className="relative group">
-                  <button 
-                    className="w-full text-left p-3 rounded-lg text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-start gap-3 overflow-hidden text-sm border border-gray-200 dark:border-gray-700 hover:border-primary/30 dark:hover:border-secondary/30 shadow-sm hover:shadow-md group focus:outline-none focus:ring-2 focus:ring-primary/50 dark:focus:ring-secondary/50"
-                    onClick={() => loadChatFromHistory(chat)} // Call with only chat object
+          ) : chatHistory.length > 0 ? (
+            <div className="space-y-2">
+              {chatHistory.map((session) => (
+                <div 
+                  key={session.id || session._id}
+                  className="w-full rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-600 group focus:outline-none focus:ring-2 focus:ring-primary/50 dark:focus:ring-secondary/50 relative"
+                >
+                  <button
+                    onClick={() => loadChatSession(session.id || session._id)}
+                    className="w-full text-left p-2.5 focus:outline-none"
                   >
-                    <div className="h-8 w-8 rounded-full bg-primary/10 dark:bg-secondary/20 flex items-center justify-center flex-shrink-0 text-primary dark:text-secondary shadow-sm">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                      </svg>
+                    <div className="flex items-start">
+                      <div className="h-6 w-6 rounded-full bg-primary/10 dark:bg-secondary/20 flex items-center justify-center mr-2 mt-0.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-primary dark:text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-800 dark:text-white truncate group-hover:text-primary dark:group-hover:text-secondary transition-colors">
+                          {session.title || 'Chat Session'}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          {new Date(session.date || session.createdAt || Date.now()).toLocaleDateString(undefined, { 
+                            year: 'numeric', 
+                            month: 'short', 
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
                     </div>
-                    <div className="overflow-hidden flex-grow">
-                      <div className="truncate font-medium group-hover:text-primary dark:group-hover:text-secondary transition-colors">{chat.title}</div>
-                     </div>
-                    <button 
-                      onClick={(e) => deleteChat(chat.id, e)}
-                      className="md:opacity-0 md:group-hover:opacity-100 opacity-100 p-1.5 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 dark:text-red-400 transition-opacity focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:ring-opacity-50"
-                      title="Delete Chat"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
+                  </button>
+                  
+                  {/* Delete button */}
+                  <button
+                    onClick={(e) => deleteSession(session.id || session._id, e)}
+                    className="absolute top-2 right-2 p-1.5 rounded-full text-gray-400 hover:text-red-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500/50"
+                    title="Delete chat session"
+                    aria-label="Delete chat session"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
                   </button>
                 </div>
               ))}
+            </div>
+          ) : (
+            <div className="text-center p-3 text-sm text-gray-800 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
+              <p>No chat history available</p>
+              <button 
+                onClick={startNewChat}
+                className="mt-2 px-3 py-1.5 text-xs bg-primary hover:bg-primary-dark dark:bg-secondary dark:hover:bg-secondary-dark text-white rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 dark:focus:ring-secondary/50"
+              >
+                Start a new chat
+              </button>
             </div>
           )}
         </div>
@@ -2247,29 +2156,17 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
                 {currentUser?.name || currentUser?.email || 'User'}
               </span>
             )}
-            {isMobile ? (
-              <button 
-                onClick={startNewChat}
-                className="p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 transition-all duration-300 hover:shadow-sm hover:text-primary dark:hover:text-secondary focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-secondary focus:ring-opacity-50"
-                aria-label="New chat"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                </svg>
-              </button>
-            ) : (
-              <button 
-                onClick={clearChat}
-                className="p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 transition-all duration-300 hover:shadow-sm hover:text-primary dark:hover:text-secondary focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-secondary focus:ring-opacity-50"
-                disabled={loading || isTyping}
-                aria-label="Clear conversation"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-                <span className="hidden md:inline text-sm font-medium">Clear</span>
-              </button>
-            )}
+            <button 
+              onClick={startNewChat}
+              className="p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 transition-all duration-300 hover:shadow-sm hover:text-primary dark:hover:text-secondary focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-secondary focus:ring-opacity-50"
+              disabled={loading || isTyping}
+              aria-label="Clear conversation"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              <span className="hidden md:inline text-sm font-medium">New Chat</span>
+            </button>
           </div>
         </header>
         
@@ -2323,7 +2220,7 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
             </div>
           )}
           
-          {/* Empty state when no messages but showWelcome is false (chat history was loaded) */}
+          {/* Empty state when no messages and showWelcome is false */}
           {messages.length === 0 && !showWelcome && (
             <div className="h-full flex flex-col items-center justify-center p-8 text-center">
               <div className="h-16 w-16 rounded-full bg-primary/10 dark:bg-secondary/20 flex items-center justify-center mb-4 shadow-sm">
@@ -2331,8 +2228,8 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Chat Session Loaded</h3>
-              <p className="text-gray-600 dark:text-gray-400 max-w-md mb-6">This chat session has no messages yet. Start a conversation below.</p>
+              <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Start a New Conversation</h3>
+              <p className="text-gray-600 dark:text-gray-400 max-w-md mb-6">Ask NiveshPath AI about investments, financial planning, or any financial questions.</p>
             </div>
           )}
           {messages.map((message, index) => (
@@ -2372,50 +2269,68 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
                   {/* Message content */}
                   {message.isBot ? (
                     <div className="text-gray-800 dark:text-white text-sm sm:text-base prose prose-sm dark:prose-invert max-w-none notion-like-content">
-                      {message.query && (
-                        <div className="mb-2 p-2 bg-gray-100 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                          <div className="flex items-center mb-1">
-                            <span className="text-xs font-semibold bg-secondary/20 dark:bg-secondary/30 text-secondary dark:text-secondary-light px-2 py-0.5 rounded-full">Your Question</span>
-                          </div>
-                          <div className="text-sm text-gray-700 dark:text-gray-300">{message.query}</div>
-                        </div>
-                      )}
                       <div>
-                        {formatBotMessage(message.text)}
-                        {/* Copy and Share buttons below the message */}
-                        <div className="mt-4 flex justify-end space-x-2">
-                          <button 
-                            onClick={() => {
-                              navigator.clipboard.writeText(message.text);
-                                                          }}
-                            className="text-gray-800 hover:text-gray-900 dark:text-white dark:hover:text-white transition-colors p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-sm flex items-center group focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-secondary focus:ring-opacity-50"
-                            title="Copy answer"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 group-hover:text-primary dark:group-hover:text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                            </svg>
-                            <span className="ml-1 hidden md:inline text-xs">Copy</span>
-                          </button>
-                          <button 
-                            onClick={() => {
-                              if (navigator.share) {
-                                navigator.share({
-                                  title: 'NiveshPath AI Answer',
-                                  text: message.text
-                                }).catch(err => console.error('Share failed:', err));
-                              } else {
+                        {message.thinking ? (
+                          <ThinkingAnimation 
+                            onComplete={() => {
+                              // This will be called when thinking animation completes
+                              // but we're handling this in the main response processing
+                            }} 
+                          />
+                        ) : (
+                          <>
+                            {formatBotMessage(message.text)}
+                            {message.typing && (
+                              <div className="mt-4 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 inline-flex items-center shadow-sm">
+                                <span className="text-sm text-gray-600 dark:text-gray-300 font-medium mr-3">Generating comprehensive financial advice</span>
+                                <div className="typing-indicator">
+                                  <span></span>
+                                  <span></span>
+                                  <span></span>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )}
+                        
+                        {/* Copy and Share buttons below the message - only show when not thinking and has text */}
+                        {!message.thinking && message.text && (
+                          <div className="mt-4 flex justify-end space-x-2">
+                            <button 
+                              onClick={() => {
                                 navigator.clipboard.writeText(message.text);
-                                                              }
-                            }}
-                            className="text-gray-800 hover:text-gray-900 dark:text-white dark:hover:text-white transition-colors p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-sm flex items-center group focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-secondary focus:ring-opacity-50"
-                            title="Share answer"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 group-hover:text-primary dark:group-hover:text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                            </svg>
-                            <span className="ml-1 hidden md:inline text-xs">Share</span>
-                          </button>
-                        </div>
+                                toast.success("Message copied to clipboard!");
+                              }}
+                              className="text-gray-800 hover:text-gray-900 dark:text-white dark:hover:text-white transition-colors p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-sm flex items-center group focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-secondary focus:ring-opacity-50"
+                              title="Copy answer"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 group-hover:text-primary dark:group-hover:text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                              </svg>
+                              <span className="ml-1 hidden md:inline text-xs">Copy</span>
+                            </button>
+                            <button 
+                              onClick={() => {
+                                if (navigator.share) {
+                                  navigator.share({
+                                    title: 'NiveshPath AI Answer',
+                                    text: message.text
+                                  }).catch(err => console.error('Share failed:', err));
+                                } else {
+                                  navigator.clipboard.writeText(message.text);
+                                  toast.success("Message copied to clipboard!");
+                                }
+                              }}
+                              className="text-gray-800 hover:text-gray-900 dark:text-white dark:hover:text-white transition-colors p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-sm flex items-center group focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-secondary focus:ring-opacity-50"
+                              title="Share answer"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 group-hover:text-primary dark:group-hover:text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                              </svg>
+                              <span className="ml-1 hidden md:inline text-xs">Share</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ) : (
@@ -2430,22 +2345,13 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
               </div>
             </div>
           ))}
-          {/* Removed divider lines after questions */}
-          {isTyping && (
-            <div className="py-6 px-4 md:px-6 bg-white dark:bg-gray-800 transition-colors duration-200 border-b border-gray-100 dark:border-gray-700">
-              <div className="w-full max-w-2xl mx-auto">
-                <div className="font-medium text-sm mb-2 flex items-center">
-                  <span className="text-blue-600 dark:text-blue-400">NiveshPath AI</span>
-                  <span className="ml-2 text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full">AI</span>
-                </div>
-                <div className="flex space-x-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm inline-flex">
-                  <div className="w-2 h-2 bg-blue-600 dark:bg-blue-500 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-blue-600 dark:bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  <div className="w-2 h-2 bg-blue-600 dark:bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-                </div>
-              </div>
-            </div>  
+          {/* Show divider only when typing is active but not when response has started */}
+          {isTyping && messages.length > 0 && !messages[messages.length - 1].typing && !messages[messages.length - 1].thinking && (
+            <div className="max-w-3xl mx-auto px-4 py-2">
+              <div className="border-t border-gray-200 dark:border-gray-700 my-2"> thinking ...</div>
+            </div>
           )}
+          
           <div ref={messagesEndRef} />
         </div>
         {/* Input Form - Enhanced modern style */}
@@ -2508,6 +2414,51 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
               overflow: hidden !important;
               height: auto !important;
               max-height: 80px !important;
+            }
+          }
+          
+          /* Typing indicator animation */
+          .typing-indicator {
+            display: inline-flex;
+            align-items: center;
+            margin-left: 2px;
+          }
+          
+          .typing-indicator span {
+            height: 10px;
+            width: 10px;
+            margin: 0 3px;
+            background-color: var(--color-primary, #4F46E5);
+            border-radius: 50%;
+            display: inline-block;
+            opacity: 0.6;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+          }
+          
+          .dark .typing-indicator span {
+            background-color: var(--color-secondary, #10B981);
+            opacity: 0.7;
+          }
+          
+          .typing-indicator span:nth-child(1) {
+            animation: bounce 1.2s infinite cubic-bezier(0.45, 0.05, 0.55, 0.95);
+          }
+          
+          .typing-indicator span:nth-child(2) {
+            animation: bounce 1.2s infinite cubic-bezier(0.45, 0.05, 0.55, 0.95) 0.3s;
+          }
+          
+          .typing-indicator span:nth-child(3) {
+            animation: bounce 1.2s infinite cubic-bezier(0.45, 0.05, 0.55, 0.95) 0.6s;
+          }
+          
+          @keyframes bounce {
+            0%, 100% {
+              transform: translateY(0);
+            }
+            50% {
+              transform: translateY(-8px);
             }
           }
           
@@ -2636,7 +2587,7 @@ const Chatbot = ({ darkMode, setDarkMode }) => {
       </div>
     </div>
     );
-};
 
+  }
 
 export default Chatbot;
