@@ -29,7 +29,7 @@ const checkProfileCompleteness = (profile) => {
     missingFields.push('demographicInfo');
   } else {
     const { demographic } = profile.onboardingData;
-    if (!demographic.location) missingFields.push('location');
+    if (!demographic.location) missingFields.push('location');  
     if (!demographic.occupation) missingFields.push('occupation');
   }
   
@@ -236,6 +236,24 @@ exports.submitQuery = async (req, res, next) => {
     }
     
     await chatSession.save();
+    
+    // Update cache with the new chat session
+    // When a new conversation is created, we should update the chat history cache
+    if (isNewPage || !conversationId) {
+      // Clear the first page cache to ensure new conversation appears in history
+      const firstPageCacheKey = `chat_history_${req.user.userId}_10_0`;
+      chatbotCache.delete(firstPageCacheKey);
+      
+      // Also clear any conversation-specific cache if it exists
+      if (conversationId) {
+        const conversationCacheKey = `conversation_${conversationId}`;
+        chatbotCache.delete(conversationCacheKey);
+      }
+    } else if (conversationId) {
+      // Update conversation cache
+      const conversationCacheKey = `conversation_${conversationId}`;
+      chatbotCache.delete(conversationCacheKey);
+    }
     
     // Check if headers have already been sent before sending response
     if (!res.headersSent) {
@@ -553,6 +571,7 @@ exports.getChatSession = async (req, res, next) => {
 };
 
 // Delete a chat session
+// deleteSession फ़ंक्शन में कैश अपडेट करने के लिए कोड जोड़ें
 exports.deleteSession = async (req, res, next) => {
   try {
     const { sessionId } = req.params;
@@ -568,14 +587,28 @@ exports.deleteSession = async (req, res, next) => {
     });
     
     if (!chatSession) {
-      // Check if headers have already been sent before sending response
       if (!res.headersSent) {
         return res.status(404).json({ message: 'Chat session not found' });
       }
       return;
     }
     
+    // Get conversationId before deleting the session
+    const conversationId = chatSession.conversationId;
+    const userId = req.user.userId;
+    
     await chatSession.deleteOne();
+    
+    // Clear related cache entries
+    const conversationCacheKey = `conversation_${conversationId}`;
+    chatbotCache.delete(conversationCacheKey);
+    
+    // Clear chat history cache for this user
+    // यहां हम सभी संभावित कैश कीज़ को क्लियर करेंगे
+    for (let i = 0; i < 20; i++) { // पेजिनेशन के लिए 20 पेज तक क्लियर करें
+      const historyKey = `chat_history_${userId}_10_${i * 10}`;
+      chatbotCache.delete(historyKey);
+    }
     
     res.status(200).json({
       message: 'Chat session deleted successfully',
